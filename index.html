@@ -1,0 +1,4633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório - Gerador Pnae 2026</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    :root {
+      --bg-slate: #e8f0fe;
+      --card-bg: #ffffff;
+      --text-main: #000000;
+      --text-muted: #333333;
+      --border-color: #b0c4de;
+      --primary-blue: #1a73e8;
+      --primary-hover: #1557b0;
+      --header-bg: #0d47a1;
+      --sort-asc: #1a73e8;
+      --sort-desc: #d32f2f;
+      --filter-bg: #dce8f5;
+      --card-gradient-start: #dce8f5;
+      --card-gradient-end: #b0c4de;
+      --card-border: #8aadc9;
+      --btn-secondary-bg: #dce8f5;
+      --btn-secondary-hover: #b0c4de;
+      --shadow-color: rgba(13, 71, 161, 0.15);
+      --table-stripe: #f0f5fb;
+      --table-hover: #dce8f5;
+      --input-border: #8aadc9;
+      --input-focus: #1a73e8;
+      --scrollbar-track: #b0c4de;
+      --scrollbar-thumb: #1a73e8;
+      --card-label-color: #0d47a1;
+      --tab-comprovante-color: #7c3aed;
+      --tab-rel-custom-color: #0f766e;
+      --btn-csv-color: #16a34a;
+      --btn-csv-hover: #15803d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-slate); color: var(--text-main); min-height: 100vh; padding: 0.75rem; }
+
+    /* ✅ CONTAINER AGORA OCUPA 100% DA LARGURA */
+    .container {
+      max-width: 100%;
+      width: 100%;
+      margin: 0 auto;
+      background-color: var(--card-bg);
+      border: 2px solid var(--border-color);
+      padding: 1.25rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 0.8rem 1.5rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      background: #e2e8f0;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background-color: var(--primary-blue);
+      color: #ffffff;
+    }
+    .tab-btn-vip.active {
+      background-color: var(--tab-comprovante-color);
+      color: #ffffff;
+    }
+    .tab-btn-rel-custom.active {
+      background-color: var(--tab-rel-custom-color);
+      color: #ffffff;
+    }
+
+    .tab-content { display: none; flex-direction: column; gap: 1.25rem; }
+    .tab-content.active { display: flex; }
+
+    .header-title {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .header-title .badge {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--filter-bg);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .info-card {
+      background: linear-gradient(135deg, var(--card-gradient-start) 0%, var(--card-gradient-end) 100%);
+      color: var(--text-main);
+      padding: 0.8rem 1.5rem;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px var(--shadow-color);
+      border-left: 4px solid var(--card-border);
+    }
+
+    .info-card .card-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--card-label-color);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .info-card .card-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.6);
+      padding: 0.25rem 1rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .info-card .card-value.loading {
+      color: var(--text-muted);
+      font-weight: 400;
+      font-size: 0.95rem;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .info-card .card-value.error {
+      color: #d32f2f;
+      background: rgba(211, 47, 47, 0.12);
+      border-color: rgba(211, 47, 47, 0.3);
+    }
+
+    .info-card.success { border-left-color: #1a73e8; }
+    .info-card.success .card-value {
+      background: rgba(26, 115, 232, 0.12);
+      border-color: rgba(26, 115, 232, 0.3);
+    }
+    .info-card.warning { border-left-color: #0d47a1; }
+    .info-card.warning .card-value {
+      background: rgba(13, 71, 161, 0.12);
+      border-color: rgba(13, 71, 161, 0.3);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .actions-group {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      position: relative;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.7rem 1.2rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.88rem;
+      white-space: nowrap;
+    }
+    .btn-primary { background-color: var(--primary-blue); color: #ffffff; box-shadow: 0 2px 6px rgba(26, 115, 232, 0.4); }
+    .btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+    .btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-secondary:hover { background-color: var(--btn-secondary-hover); }
+    .btn-danger { background-color: #d32f2f; color: #ffffff; }
+    .btn-danger:hover { background-color: #b71c1c; }
+    .btn-success { background-color: #1a73e8; color: #ffffff; }
+    .btn-success:hover { background-color: #1557b0; transform: translateY(-1px); }
+    .btn-excel { background-color: #1f7b4a; color: #ffffff; }
+    .btn-excel:hover { background-color: #16663a; transform: translateY(-1px); }
+    .btn-pdf { background-color: #d32f2f; color: #ffffff; }
+    .btn-pdf:hover { background-color: #b71c1c; transform: translateY(-1px); }
+    .btn-comprovante { background-color: #7c3aed; color: #ffffff; }
+    .btn-comprovante:hover { background-color: #6d28d9; transform: translateY(-1px); }
+    .btn-print { background-color: #0f172a; color: #ffffff; }
+    .btn-codsec { background-color: #0891b2; color: #ffffff; }
+    .btn-rel-custom { background-color: var(--tab-rel-custom-color); color: #ffffff; }
+    .btn-rel-custom:hover { background-color: #115e59; transform: translateY(-1px); }
+    .btn-csv { background-color: var(--btn-csv-color); color: #ffffff; box-shadow: 0 2px 6px rgba(22, 163, 74, 0.35); }
+    .btn-csv:hover { background-color: var(--btn-csv-hover); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+    .column-selector { position: relative; }
+    .column-dropdown {
+      display: none; position: absolute; right: 0; top: 110%;
+      background: #ffffff; border: 1px solid var(--border-color);
+      border-radius: 8px; box-shadow: 0 10px 25px var(--shadow-color);
+      width: 280px; max-height: 380px; overflow-y: auto; padding: 0.75rem; z-index: 100;
+    }
+    .column-dropdown.active { display: block; }
+
+    .column-dropdown-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 0.5rem; margin-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700; font-size: 0.85rem; color: var(--text-muted);
+      position: sticky; top: 0; background: #ffffff; z-index: 1;
+    }
+
+    .column-option {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.4rem 0.2rem; font-size: 0.85rem; color: var(--text-main);
+      cursor: pointer; user-select: none;
+    }
+    .column-option:hover { background-color: var(--filter-bg); border-radius: 4px; }
+    .column-option input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary-blue); cursor: pointer; }
+
+    .codsec-panel {
+      background: linear-gradient(135deg, #ecfeff 0%, #ffffff 100%);
+      border: 2px solid #0891b2; border-radius: 10px; padding: 0; overflow: hidden;
+    }
+    .codsec-panel-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.8rem 1.2rem; cursor: pointer; user-select: none;
+      background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+      color: #ffffff; font-weight: 700; font-size: 0.95rem;
+    }
+    .codsec-panel-header .title { display: flex; align-items: center; gap: 0.6rem; }
+    .codsec-panel-header .toggle-icon { font-size: 1rem; transition: transform 0.25s; }
+    .codsec-panel.collapsed .codsec-panel-header .toggle-icon { transform: rotate(-90deg); }
+    .codsec-panel-header .badge-codsec {
+      font-size: 0.75rem; background: rgba(255,255,255,0.25); color: #fff;
+      padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 700;
+    }
+    .codsec-panel-body {
+      padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.75rem;
+    }
+    .codsec-panel.collapsed .codsec-panel-body { display: none; }
+    .codsec-textarea-wrapper { display: flex; flex-direction: column; gap: 0.4rem; }
+    .codsec-textarea-wrapper label { font-size: 0.78rem; font-weight: 700; color: #0e7490; }
+    .codsec-textarea {
+      width: 100%; min-height: 110px; padding: 0.7rem 0.9rem;
+      border: 1.5px solid #67e8f9; border-radius: 8px;
+      font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85rem;
+      resize: vertical; outline: none; background: #ffffff; color: #0f172a; line-height: 1.5;
+    }
+    .codsec-textarea:focus {
+      border-color: #0891b2; box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+    }
+    .codsec-info-bar {
+      display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+      font-size: 0.82rem; color: #0e7490;
+    }
+    .codsec-info-bar .chip {
+      background: #cffafe; border: 1px solid #67e8f9; color: #0e7490;
+      padding: 0.25rem 0.7rem; border-radius: 20px; font-weight: 700; font-size: 0.78rem;
+    }
+    .codsec-info-bar .chip.success { background: #dcfce7; border-color: #86efac; color: #166534; }
+    .codsec-info-bar .chip.error { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+    .codsec-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+
+    /* ✅ TABLE WRAPPER 100% */
+    .table-wrapper {
+      overflow: auto; max-height: 75vh;
+      border: 2px solid var(--border-color); border-radius: 8px;
+      position: relative; isolation: isolate;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      width: 100%;
+    }
+
+    /* ✅ TABELA DO RELATÓRIO: LARGURA 100% E LAYOUT AUTO */
+    #tab-relatorio .table-wrapper {
+      width: 100%;
+    }
+    #tab-relatorio .report-table {
+      width: 100%;
+      min-width: 100%;
+      table-layout: auto;
+    }
+
+    .report-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.85rem; text-align: left;
+      table-layout: auto; min-width: 100%;
+    }
+
+    .report-table thead { position: sticky; top: 0; z-index: 10; }
+
+    .report-table thead th {
+      background-color: var(--header-bg); color: #ffffff;
+      padding: 0.4rem 0.6rem; position: sticky; top: 0; z-index: 10;
+      user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border-bottom: 2px solid #0a3a7a; font-size: 0.8rem;
+      box-shadow: 0 2px 8px var(--shadow-color);
+    }
+
+    .report-table th .header-content { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+    .report-table th .column-title { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 700; font-size: 0.78rem; }
+    .sort-indicator { display: inline-block; margin-left: 4px; font-size: 0.7rem; }
+    .sort-indicator.asc { color: #64b5f6; }
+    .sort-indicator.desc { color: #ef5350; }
+
+    .filter-input-wrapper {
+      position: relative;
+      display: flex;
+      width: 100%;
+    }
+
+    .column-filter {
+      width: 100%;
+      padding: 3px 22px 3px 6px;
+      border: 1px solid var(--input-border);
+      border-radius: 4px;
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 0.72rem;
+      transition: all 0.2s;
+      outline: none;
+      height: 24px;
+    }
+    .column-filter:focus { border-color: var(--input-focus); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.25); }
+    .column-filter.active { border-color: var(--input-focus); background: #f0f5fb; font-weight: 700; }
+    .column-filter.multi-active { border-color: #7c3aed; background: #f5f3ff; font-weight: 700; color: #5b21b6; }
+
+    .filter-dropdown-btn {
+      position: absolute;
+      right: 1px;
+      top: 1px;
+      bottom: 1px;
+      width: 20px;
+      border: none;
+      background: #eef4fc;
+      border-left: 1px solid var(--input-border);
+      border-radius: 0 3px 3px 0;
+      cursor: pointer;
+      font-size: 0.6rem;
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background 0.15s;
+    }
+    .filter-dropdown-btn:hover { background: #d6e6fa; }
+    .filter-dropdown-btn:active { background: #c2dbf7; }
+    .filter-dropdown-btn.multi-active {
+      background: #ddd6fe;
+      color: #5b21b6;
+      border-left-color: #a78bfa;
+    }
+
+    .filter-dropdown-float {
+      position: fixed;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(13, 71, 161, 0.25);
+      z-index: 9999;
+      min-width: 260px;
+      max-width: 480px;
+      display: none;
+      flex-direction: column;
+      max-height: 420px;
+      overflow: hidden;
+    }
+    .filter-dropdown-float.active { display: flex; }
+
+    .filter-dd-search-wrapper {
+      padding: 6px;
+      border-bottom: 1px solid var(--border-color);
+      background: #f7faff;
+    }
+    .filter-dd-search {
+      width: 100%;
+      padding: 5px 8px;
+      border: 1px solid var(--input-border);
+      border-radius: 4px;
+      font-size: 0.78rem;
+      outline: none;
+    }
+    .filter-dd-search:focus { border-color: var(--input-focus); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15); }
+
+    .filter-dd-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 3px 0;
+      max-height: 320px;
+    }
+
+    .filter-dd-item {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #000;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-dd-item:hover { background: #eef4fc; }
+    .filter-dd-item.selected { background: #dbeafe; font-weight: 700; color: var(--primary-blue); }
+    .filter-dd-item .check {
+      width: 14px;
+      display: inline-block;
+      color: var(--primary-blue);
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+    .filter-dd-item .dd-checkbox {
+      width: 16px; height: 16px; cursor: pointer;
+      accent-color: var(--primary-blue);
+      flex-shrink: 0; margin: 0;
+    }
+    .filter-dd-item .dd-item-text {
+      flex: 1; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .filter-dd-empty {
+      padding: 12px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .filter-dd-footer {
+      border-top: 1px solid var(--border-color);
+      padding: 6px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      background: #f7faff;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .filter-dd-footer button {
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .filter-dd-footer .btn-apply-dd { background: var(--primary-blue); color: #fff; }
+    .filter-dd-footer .btn-apply-dd:hover { background: var(--primary-hover); }
+    .filter-dd-footer .btn-clear-dd { background: #fee2e2; color: #991b1b; }
+    .filter-dd-footer .btn-clear-dd:hover { background: #fecaca; }
+    .filter-dd-footer .btn-multi-hint {
+      background: #ede9fe; color: #5b21b6;
+      font-size: 0.68rem; padding: 3px 8px; border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .col-hidden { display: none !important; }
+
+    .report-table th .resizer {
+      position: absolute; right: 0; top: 0; height: 100%; width: 6px;
+      background: rgba(255, 255, 255, 0.1); cursor: col-resize; user-select: none; z-index: 10;
+    }
+    .report-table th .resizer:hover { background: rgba(255, 255, 255, 0.4); width: 8px; }
+    .report-table th .resizer:active { background: #64b5f6; }
+
+    .report-table td {
+      padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border-color);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 200px; font-size: 0.82rem; color: var(--text-main);
+      height: 30px; box-sizing: border-box;
+      contain: layout style paint;
+    }
+    .report-table tr:nth-child(even) { background-color: var(--table-stripe); }
+    .report-table tr:hover { background-color: var(--table-hover); }
+    .report-table tr.selected-row { background-color: #dbeafe !important; }
+
+    .report-table tbody tr.virtual-spacer td,
+    .csv-table tbody tr.virtual-spacer td,
+    .comprovante-table tbody tr.virtual-spacer td {
+      padding: 0; border: none; height: 0; line-height: 0; background: transparent !important;
+    }
+    .report-table tbody tr.virtual-spacer,
+    .csv-table tbody tr.virtual-spacer,
+    .comprovante-table tbody tr.virtual-spacer { background: transparent !important; }
+
+    .report-table, .report-table * { transition: none !important; }
+
+    .text-right { text-align: right; }
+
+    .report-table th.checkbox-col { width: 40px; text-align: center; }
+    .report-table td.checkbox-cell { text-align: center; padding: 0.5rem 0.3rem; }
+    .report-table td.checkbox-cell input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-blue); }
+    .report-table thead th.checkbox-col input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #fff; }
+
+    .report-table thead th.checkbox-col {
+      position: sticky !important; left: 0 !important; z-index: 30 !important;
+      background-color: var(--header-bg) !important; box-shadow: 2px 0 4px rgba(0, 0, 0, 0.15);
+    }
+    .report-table tbody td.checkbox-cell {
+      position: sticky !important; left: 0 !important; z-index: 10 !important;
+      background-color: #ffffff; box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+    }
+    .report-table tbody tr:nth-child(even) td.checkbox-cell { background-color: var(--table-stripe); }
+    .report-table tbody tr:hover td.checkbox-cell { background-color: var(--table-hover); }
+    .report-table tbody tr.selected-row td.checkbox-cell { background-color: #dbeafe !important; }
+    .report-table thead th.checkbox-col,
+    .report-table tbody td.checkbox-cell { border-right: 2px solid var(--border-color); }
+
+    .comprovante-table thead th.vip-checkbox-col {
+      position: sticky !important; left: 0 !important; z-index: 30 !important;
+      background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%) !important;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.15);
+    }
+    .comprovante-table tbody td.vip-checkbox-cell {
+      position: sticky !important; left: 0 !important; z-index: 10 !important;
+      background-color: #ffffff; box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+    }
+    .comprovante-table tbody tr:nth-child(even) td.vip-checkbox-cell { background-color: #faf5ff; }
+    .comprovante-table tbody tr:hover td.vip-checkbox-cell { background-color: #ede9fe; }
+    .comprovante-table tbody tr.selected-row td.vip-checkbox-cell { background-color: #ddd6fe !important; }
+    .comprovante-table thead th.vip-checkbox-col,
+    .comprovante-table tbody td.vip-checkbox-cell { border-right: 2px solid #a78bfa; }
+
+    .filter-summary {
+      display: flex; gap: 2rem; padding: 0.6rem 1rem;
+      font-size: 0.92rem; color: var(--text-main); background: var(--filter-bg);
+      border-radius: 6px; flex-wrap: wrap; border: 1px solid var(--border-color);
+      align-items: center;
+    }
+    .filter-summary strong { color: var(--primary-blue); font-weight: 800; }
+    .filter-summary .divider { color: #8aadc9; padding: 0 0.5rem; }
+    .filter-summary .loading-text { color: var(--text-muted); font-size: 0.85rem; }
+
+    .selection-info {
+      background: #dbeafe; border: 1px solid #60a5fa; border-radius: 8px;
+      padding: 0.6rem 1rem; font-size: 0.85rem; color: #1e40af; font-weight: 600;
+      display: none; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    }
+    .selection-info.active { display: flex; }
+
+    .loading-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 20; border-radius: 8px;
+    }
+    .spinner {
+      width: 40px; height: 40px; border: 4px solid var(--border-color);
+      border-top: 4px solid var(--primary-blue); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .pagination {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 0; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .render-stats {
+      font-size: 0.78rem; color: var(--text-muted); font-weight: 600;
+      background: var(--filter-bg); padding: 0.4rem 0.8rem; border-radius: 12px;
+    }
+
+    .table-wrapper::-webkit-scrollbar { width: 10px; height: 10px; }
+    .table-wrapper::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 6px; }
+    .table-wrapper::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 6px; border: 2px solid var(--scrollbar-track); }
+
+    @media (max-width: 768px) {
+      body { padding: 0.5rem; }
+      .container { padding: 0.75rem; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .actions-group { flex-wrap: wrap; justify-content: center; }
+      .table-wrapper { max-height: 55vh; }
+      .btn { font-size: 0.8rem; padding: 0.55rem 0.9rem; }
+      .tabs-nav { gap: 0.35rem; }
+      .tab-btn { padding: 0.6rem 0.9rem; font-size: 0.85rem; }
+    }
+
+    .toast {
+      position: fixed; bottom: 20px; right: 20px; background: var(--text-main);
+      color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 600;
+      box-shadow: 0 4px 12px var(--shadow-color); z-index: 9999;
+      transform: translateY(100px); opacity: 0; transition: all 0.3s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 4px solid #1a73e8; }
+    .toast.error { border-left: 4px solid #d32f2f; }
+
+    .csv-toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 1rem; flex-wrap: wrap; background: var(--filter-bg);
+      border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;
+    }
+    .csv-toolbar select {
+      padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;
+      background: #fff; font-size: 0.85rem; min-width: 180px;
+    }
+    .csv-table {
+      width: 100%; border-collapse: collapse; font-size: 0.85rem;
+      table-layout: fixed; min-width: 1200px;
+    }
+    .csv-table thead { position: sticky; top: 0; z-index: 10; }
+    .csv-table th {
+      background-color: var(--header-bg); color: #ffffff; padding: 8px; text-align: left;
+      font-size: 0.8rem; white-space: nowrap; position: sticky; top: 0; z-index: 10;
+      overflow: hidden; text-overflow: ellipsis; border-right: 1px solid #0a3a7a; position: relative;
+    }
+    .csv-table td {
+      padding: 6px; border-bottom: 1px solid var(--border-color);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      height: 30px; box-sizing: border-box;
+    }
+    .csv-table tr:nth-child(even) { background-color: var(--table-stripe); }
+    .csv-table select {
+      width: 100%; padding: 4px; border: 1px solid var(--border-color);
+      border-radius: 4px; background: #fff; font-size: 0.8rem;
+    }
+    .csv-table th .resizer {
+      position: absolute; right: 0; top: 0; height: 100%; width: 6px;
+      background: rgba(255, 255, 255, 0.2); cursor: col-resize; user-select: none; z-index: 10;
+    }
+    .csv-table th .resizer:hover { background: rgba(255, 255, 255, 0.5); }
+
+    #tab-comprovante .header-title { color: #5b21b6; }
+    #tab-comprovante .badge { background: #ede9fe; color: #5b21b6; }
+
+    .comprovante-header-box {
+      border: 2px solid #5b21b6; border-radius: 10px;
+      background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%);
+      padding: 1.1rem 1.4rem; display: flex; flex-direction: column; gap: 0.35rem;
+    }
+    .comprovante-header-box .cliente-row { font-size: 0.92rem; font-weight: 700; color: #5b21b6; }
+    .comprovante-header-box .cliente-row .comprovante-field { color: #000000; }
+    .comprovante-header-box .remessa-row {
+      font-size: 0.88rem; color: #5b21b6; display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;
+    }
+    .comprovante-header-box .remessa-row .comprovante-field { color: #000000; }
+    .comprovante-header-box .titulo-row { font-size: 1.05rem; font-weight: 800; color: #5b21b6; margin-top: 0.3rem; }
+    .comprovante-header-box .subtitulo-row { font-size: 0.85rem; font-weight: 600; color: #000000; }
+
+    .comprovante-field {
+      border: none; border-bottom: 1px dashed #a78bfa; background: transparent;
+      font: inherit; font-weight: inherit; color: #000000; padding: 1px 3px; outline: none;
+    }
+    .comprovante-field:focus { border-bottom: 1px solid #7c3aed; background: #ede9fe; }
+
+    .comprovante-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
+    .comprovante-table thead th {
+      background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%); color: #fff; padding: 7px 10px; text-align: left;
+      font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; position: relative;
+    }
+    .comprovante-table thead th.col-valor, .comprovante-table td.col-valor { text-align: right; }
+    .comprovante-table tbody td {
+      padding: 6px 10px; border-bottom: 1px solid #ddd6fe; color: #000000;
+      height: 30px; box-sizing: border-box;
+    }
+    .comprovante-table tbody tr:nth-child(even) { background: #faf5ff; }
+    .comprovante-table tbody tr:hover { background: #ede9fe; }
+    .comprovante-table tbody tr.selected-row { background-color: #ddd6fe !important; }
+
+    .comprovante-table .comprovante-processo-input {
+      width: 100%; border: 1px solid #c4b5fd; border-radius: 4px; padding: 3px 6px;
+      font-size: 0.8rem; background: #fff; color: #000000;
+    }
+    .comprovante-table .comprovante-processo-input:focus { outline: 2px solid #7c3aed; }
+
+    .comprovante-table .btn-remove-row {
+      border: none; background: #ede9fe; color: #dc2626; border-radius: 4px;
+      width: 22px; height: 22px; font-weight: 800; cursor: pointer; line-height: 1;
+    }
+    .comprovante-table .btn-remove-row:hover { background: #ddd6fe; }
+
+    .comprovante-total-row td {
+      font-weight: 800; border-top: 2px solid #5b21b6;
+      background: #ede9fe !important; color: #000000;
+    }
+
+    .comprovante-footer-box {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+      border-top: 1px solid #c4b5fd; padding-top: 0.6rem; font-size: 0.78rem; color: #000000;
+    }
+
+    .comprovante-table th { position: relative; user-select: none; }
+    .comprovante-table th .resizer-vip {
+      position: absolute; right: 0; top: 0; height: 100%; width: 6px;
+      background: transparent; cursor: col-resize; user-select: none; z-index: 21;
+    }
+    .comprovante-table th .resizer-vip:hover,
+    .comprovante-table th .resizer-vip.resizing-vip { background: #a78bfa; }
+    .comprovante-table th .resizer-vip:active { background: #7c3aed; }
+
+    .comprovante-table thead th.sortable-vip { cursor: pointer; transition: background 0.15s; }
+    .comprovante-table thead th.sortable-vip:hover { background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%); }
+    .comprovante-table thead th .th-content-vip {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    }
+    .comprovante-table thead th .sort-icon-vip { font-size: 0.75rem; opacity: 0.55; transition: opacity 0.15s; }
+    .comprovante-table thead th.sortable-vip:hover .sort-icon-vip { opacity: 1; }
+    .comprovante-table thead th.sort-active-vip .sort-icon-vip { opacity: 1; color: #fbbf24; font-weight: 900; }
+
+    .comprovante-table thead th.vip-checkbox-col { width: 40px; text-align: center; }
+    .comprovante-table tbody td.vip-checkbox-cell { text-align: center; padding: 6px 4px; }
+    .comprovante-table tbody td.vip-checkbox-cell input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #7c3aed; }
+    .comprovante-table thead th.vip-checkbox-col input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #fff; }
+
+    .vip-selection-info {
+      background: #ede9fe; border: 1px solid #a78bfa; border-radius: 8px;
+      padding: 0.6rem 1rem; font-size: 0.85rem; color: #5b21b6; font-weight: 600;
+      display: none; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    }
+    .vip-selection-info.active { display: flex; }
+
+    .vip-bulk-area {
+      background: #f5f3ff; border: 1px dashed #a78bfa; border-radius: 8px;
+      padding: 0.75rem 1rem; display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;
+    }
+    .vip-bulk-area .bulk-field-vip { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px; }
+    .vip-bulk-area .bulk-field-vip label { font-size: 0.78rem; font-weight: 700; color: #5b21b6; }
+    .vip-bulk-area .bulk-field-vip input {
+      padding: 7px 12px; border: 1px solid #c4b5fd; border-radius: 6px;
+      background: #fff; color: #000; font-size: 0.85rem; outline: none;
+    }
+    .vip-bulk-area .bulk-field-vip input:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15); }
+
+    .comprovante-table tbody td.col-escola {
+      white-space: normal !important;
+      word-break: normal !important;
+      overflow-wrap: break-word !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      line-height: 1.35;
+      height: auto !important;
+      min-height: 30px;
+      vertical-align: top;
+      min-width: 250px;
+    }
+    .comprovante-table tbody td.col-municipio {
+      white-space: normal !important;
+      word-break: normal !important;
+      overflow-wrap: break-word !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      line-height: 1.35;
+      height: auto !important;
+      min-height: 30px;
+      vertical-align: top;
+      min-width: 150px;
+    }
+    .comprovante-table tbody td.col-processo {
+      white-space: nowrap !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      word-break: keep-all !important;
+      min-width: 220px;
+    }
+    .comprovante-table tbody td.col-processo .comprovante-processo-input {
+      white-space: nowrap;
+      overflow: visible;
+      text-overflow: clip;
+      min-width: 100%;
+    }
+    .comprovante-table tbody tr { height: auto; }
+    .comprovante-table tbody td { height: auto; min-height: 30px; }
+
+    .pdf-preview-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);
+      z-index: 9998; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .pdf-preview-overlay.active { display: flex; }
+
+    .pdf-preview-modal {
+      background: #ffffff; border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      width: 100%; max-width: 1200px; height: 92vh;
+      display: flex; flex-direction: column; overflow: hidden;
+      animation: pdfPreviewIn 0.25s ease;
+    }
+    @keyframes pdfPreviewIn {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .pdf-preview-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.9rem 1.2rem;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #ffffff; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .pdf-preview-header .title {
+      font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .pdf-preview-header .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .pdf-preview-header .actions .btn { padding: 0.5rem 0.9rem; font-size: 0.85rem; }
+    .pdf-preview-body { flex: 1; background: #475569; overflow: hidden; position: relative; }
+    .pdf-preview-body iframe { width: 100%; height: 100%; border: none; background: #ffffff; }
+    .pdf-preview-footer {
+      padding: 0.6rem 1.2rem; background: #f1f5f9; border-top: 1px solid #cbd5e1;
+      font-size: 0.78rem; color: #475569;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    }
+
+    #tab-relatorio-custom .header-title { color: #0f766e; }
+    #tab-relatorio-custom .badge { background: #ccfbf1; color: #0f766e; }
+
+    #rel-custom-table {
+      table-layout: auto;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+    #rel-custom-table thead th {
+      background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+      color: #ffffff;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      white-space: nowrap;
+      user-select: none;
+      border-right: 1px solid rgba(255,255,255,0.15);
+      cursor: pointer;
+    }
+    #rel-custom-table thead th .rel-th-content {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    }
+    #rel-custom-table thead th .rel-sort-icon {
+      font-size: 0.75rem; opacity: 0.65;
+    }
+    #rel-custom-table thead th.sort-active-rc .rel-sort-icon {
+      opacity: 1; color: #fbbf24; font-weight: 900;
+    }
+    #rel-custom-table tbody td {
+      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid var(--border-color);
+      color: #0f172a;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      word-break: normal;
+      vertical-align: middle;
+      overflow: visible;
+    }
+    #rel-custom-table tbody td.col-valor {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    #rel-custom-table tbody tr:nth-child(even) { background-color: #f8fafc; }
+    #rel-custom-table tbody tr:hover { background-color: #f1f5f9; }
+
+    #rel-custom-table tfoot td {
+      background: #ccfbf1;
+      font-weight: 800;
+      color: #0f766e;
+      border-top: 2px solid #0f766e;
+      padding: 0.55rem 0.6rem;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    #rel-custom-table tfoot td.total-label { text-align: right; }
+    #rel-custom-table tfoot td.total-value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: #047857;
+    }
+    #rel-custom-table tfoot td.total-empty { background: #ccfbf1; }
+
+    .rel-custom-empty {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .rel-custom-resizer {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: 6px;
+      background: transparent;
+      cursor: col-resize;
+      user-select: none;
+      z-index: 21;
+    }
+    .rel-custom-resizer:hover,
+    .rel-custom-resizer.resizing-rc { background: #fbbf24; }
+
+    .rel-custom-toolbar-hint {
+      background: #f0fdfa;
+      border: 1px dashed #5eead4;
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      font-size: 0.82rem;
+      color: #0f766e;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #tab-comprovante, #tab-comprovante * { visibility: visible; }
+      #tab-comprovante { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
+      #tab-comprovante .no-print { display: none !important; }
+      .vip-bulk-area, .vip-bulk-area * { display: none !important; visibility: hidden !important; }
+      .vip-selection-info, .vip-selection-info * { display: none !important; visibility: hidden !important; }
+      .comprovante-header-box { border: 1.5px solid #000; }
+      .comprovante-table thead th { background: #5b21b6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .comprovante-table th .resizer-vip { display: none !important; }
+      .comprovante-table thead th .sort-icon-vip { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="container">
+    <nav class="tabs-nav">
+      <button class="tab-btn active" id="tab-btn-relatorio" onclick="switchTab('relatorio')">📊 Relatório PNAE 2026</button>
+      <button class="tab-btn" id="tab-btn-csv" onclick="switchTab('csv')">📄 XLSX PNAE</button>
+      <button class="tab-btn tab-btn-vip" id="tab-btn-comprovante" onclick="switchTab('comprovante')">🧾 Gerar Comprovante VIP Pnae</button>
+      <button class="tab-btn tab-btn-rel-custom" id="tab-btn-relatorio-custom" onclick="switchTab('relatorio-custom')">📄 Gerar Relatório</button>
+    </nav>
+
+    <div class="tab-content active" id="tab-relatorio">
+      <div class="header-title">
+        📋 Relatório Gerador Pnae 2026
+        <span class="badge" id="total-records">Carregando...</span>
+      </div>
+
+      <div class="cards-grid">
+        <div class="info-card warning" id="card-y1">
+          <span class="card-label">📊 Dados Gerados</span>
+          <span class="card-value loading" id="cell-y1-value">Carregando...</span>
+        </div>
+
+        <div class="info-card success" id="card-soma">
+          <span class="card-label">💰 Soma Valor Original</span>
+          <span class="card-value loading" id="soma-valor-original">Carregando...</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="actions-group">
+          <button type="button" class="btn btn-danger" id="btn-clear-filters">✕ Limpar Filtros</button>
+          <div class="column-selector">
+            <button type="button" class="btn btn-secondary" id="btn-toggle-columns">⚙️ Colunas</button>
+            <div class="column-dropdown" id="column-dropdown">
+              <div class="column-dropdown-header">
+                <span>Seleção de Colunas</span>
+                <button type="button" id="btn-select-all" style="background:none; border:none; color:var(--primary-blue); cursor:pointer; font-size:0.75rem; font-weight:700;">Marcar Todos</button>
+              </div>
+              <div id="column-checkboxes-container"></div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary" id="btn-auto-fit-columns" title="Redimensionar todas as colunas visíveis de acordo com o conteúdo">📏 Auto-ajustar Colunas</button>
+          <button type="button" class="btn btn-primary" id="btn-refresh">↻ Atualizar</button>
+        </div>
+
+        <div class="actions-group">
+          <button type="button" class="btn btn-csv" id="btn-add-to-csv">➕ Adicionar ao XLSX</button>
+          <button type="button" class="btn btn-comprovante" id="btn-open-add-comprovante">🧾 Adicionar Selecionados ao VIP</button>
+          <button type="button" class="btn btn-excel" id="btn-export-excel">📊 Exportar Excel</button>
+          <button type="button" class="btn btn-pdf" id="btn-export-pdf">📄 Exportar PDF</button>
+        </div>
+      </div>
+
+      <div class="codsec-panel collapsed" id="codsec-panel">
+        <div class="codsec-panel-header" id="codsec-panel-header">
+          <div class="title">
+            <span>🔎 Filtro Múltiplo por Código SEC</span>
+            <span class="badge-codsec" id="codsec-badge-count" style="display:none;">0</span>
+          </div>
+          <span class="toggle-icon" id="codsec-toggle-icon">▼</span>
+        </div>
+
+        <div class="codsec-panel-body" id="codsec-panel-body">
+          <div class="codsec-textarea-wrapper">
+            <label for="codsec-textarea">Cole aqui os códigos SEC (um por linha, ou separados por vírgula / espaço / ponto e vírgula):</label>
+            <textarea
+              id="codsec-textarea"
+              class="codsec-textarea"
+              placeholder="Exemplo:
+1133715
+1155547
+1179481"
+            ></textarea>
+          </div>
+
+          <div class="codsec-actions">
+            <button type="button" class="btn btn-codsec" id="btn-codsec-apply">🔎 Filtrar</button>
+            <button type="button" class="btn btn-secondary" id="btn-codsec-clear">🧹 Limpar Filtro Código SEC</button>
+            <button type="button" class="btn btn-secondary" id="btn-codsec-selectall">✅ Selecionar Todos os Resultados</button>
+          </div>
+
+          <div class="codsec-info-bar" id="codsec-info-bar">
+            <span class="chip" id="codsec-chip-status">Aguardando códigos...</span>
+            <span class="chip" id="codsec-chip-found" style="display:none;">0 encontrados</span>
+            <span class="chip error" id="codsec-chip-notfound" style="display:none;">0 não encontrados</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="selection-info" id="selection-info">
+        <span>✅ <strong id="selected-count">0</strong> registro(s) selecionado(s)</span>
+        <button type="button" class="btn btn-csv" id="btn-add-selected-csv" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">➕ Adicionar Selecionados ao CSV</button>
+        <button type="button" class="btn btn-comprovante" id="btn-add-selected-vip" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">🧾 Adicionar Selecionados ao VIP</button>
+        <button type="button" class="btn btn-rel-custom" id="btn-add-selected-rel-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">📄 Adicionar ao Relatório</button>
+        <button type="button" class="btn btn-danger" id="btn-clear-selection" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">✕ Limpar Seleção</button>
+      </div>
+
+      <div class="filter-summary" id="filter-summary">
+        <span><strong id="filter-count">0</strong> registros encontrados</span>
+        <span class="divider">|</span>
+        <span id="loading-info" class="loading-text"></span>
+      </div>
+
+      <div class="table-wrapper" id="table-wrapper">
+        <div class="loading-overlay" id="loading-overlay">
+          <div class="spinner"></div>
+        </div>
+        <table class="report-table" id="report-table">
+          <thead>
+            <tr id="report-thead-tr">
+              <th>Carregando estrutura...</th>
+            </tr>
+          </thead>
+          <tbody id="report-tbody">
+            <tr><td>Buscando informações da aba relatoriopnae...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <span class="render-stats" id="render-stats">—</span>
+        <span class="render-stats" id="load-time">—</span>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-csv">
+      <div class="header-title">
+        📄 XLSX PNAE
+        <span class="badge" id="csv-total-records">0 registros</span>
+      </div>
+
+      <div class="csv-toolbar">
+        <div class="actions-group">
+          <label for="bulk-parcela" style="font-weight: 700;">Parcela (Massa):</label>
+          <select id="bulk-parcela"></select>
+          <button type="button" class="btn btn-primary" id="btn-apply-bulk">⚡ Aplicar a Todos</button>
+        </div>
+        <div class="actions-group">
+          <button type="button" class="btn btn-danger" id="btn-clear-csv">🗑️ Limpar Tabela</button>
+          <button type="button" class="btn btn-csv" id="btn-export-csv">💾 Exportar XLSX</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="csv-table" id="csv-table">
+          <thead>
+            <tr id="csv-thead-tr"></tr>
+          </thead>
+          <tbody id="csv-tbody">
+            <tr><td colspan="15" style="text-align: center; padding: 2rem;">Nenhum registro adicionado. Vá para a aba Relatório e adicione os dados.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-comprovante">
+      <div class="header-title no-print">
+        🧾 Gerar Comprovante VIP Pnae
+        <span class="badge" id="comprovante-total-records">0 registros no comprovante</span>
+      </div>
+
+      <div class="toolbar no-print">
+        <div class="actions-group">
+          <button type="button" class="btn btn-danger" id="btn-clear-comprovante">🗑️ Limpar Comprovante</button>
+          <button type="button" class="btn btn-secondary" id="btn-vip-select-all">✅ Selecionar Todos</button>
+          <button type="button" class="btn btn-secondary" id="btn-vip-clear-selection">✕ Limpar Seleção</button>
+        </div>
+        <div class="actions-group">
+          <button type="button" class="btn btn-print" id="btn-print-comprovante">🖨️ Imprimir</button>
+          <button type="button" class="btn btn-excel" id="btn-export-comprovante-excel">📊 Excel</button>
+          <button type="button" class="btn btn-pdf" id="btn-export-comprovante-pdf">📄 PDF</button>
+        </div>
+      </div>
+
+      <div class="comprovante-header-box">
+        <div class="cliente-row">
+          Cliente: <input type="text" class="comprovante-field" id="comprovante-cliente" value="Secretaria da Educação da Bahia - SEC" style="width:320px;">
+        </div>
+        <div class="remessa-row">
+          Remessa: <input type="text" class="comprovante-field" id="comprovante-remessa" value="" style="width:100px;">
+          &nbsp;|&nbsp; Data: <input type="text" class="comprovante-field" id="comprovante-data" value="" style="width:110px;">
+        </div>
+        <div class="titulo-row">Comprovante de Liberação de Limite – Cartão PNAE</div>
+        <div class="subtitulo-row">Arquivos Formato VIP636</div>
+      </div>
+
+      <div class="vip-bulk-area no-print">
+        <div class="bulk-field-vip">
+          <label for="vip-bulk-processo">📝 Aplicar em massa na coluna "Processo SEI":</label>
+          <input type="text" id="vip-bulk-processo" placeholder="Digite um valor (ex: número do processo) ou deixe vazio para limpar todas">
+        </div>
+        <button type="button" class="btn btn-comprovante" id="btn-apply-vip-processo">⚡ Aplicar a Todas as Linhas</button>
+        <button type="button" class="btn btn-secondary" id="btn-apply-vip-empty">🧹 Deixar Todas Vazias</button>
+      </div>
+
+      <div class="vip-selection-info no-print" id="vip-selection-info">
+        <span>✅ <strong id="vip-selected-count">0</strong> registro(s) selecionado(s) no comprovante</span>
+        <button type="button" class="btn btn-danger" id="btn-vip-remove-selected" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">🗑️ Remover Selecionados</button>
+      </div>
+
+      <div class="table-wrapper" id="comprovante-table-wrapper" style="max-height: 600px;">
+        <table class="comprovante-table" id="comprovante-table">
+          <thead>
+            <tr>
+              <th class="vip-checkbox-col no-print">
+                <input type="checkbox" id="vip-header-select-all" title="Selecionar todos">
+              </th>
+              <th class="sortable-vip" data-sort-key="processoSei" style="width:230px;">
+                <div class="th-content-vip"><span>Processo SEI</span><span class="sort-icon-vip">↕</span></div>
+                <div class="resizer-vip"></div>
+              </th>
+              <th class="sortable-vip" data-sort-key="nte" style="width:60px;">
+                <div class="th-content-vip"><span>NTE</span><span class="sort-icon-vip">↕</span></div>
+                <div class="resizer-vip"></div>
+              </th>
+              <th class="sortable-vip" data-sort-key="municipio" style="width:180px;">
+                <div class="th-content-vip"><span>Município</span><span class="sort-icon-vip">↕</span></div>
+                <div class="resizer-vip"></div>
+              </th>
+              <th class="sortable-vip" data-sort-key="codSec" style="width:100px;">
+                <div class="th-content-vip"><span>Código SEC</span><span class="sort-icon-vip">↕</span></div>
+                <div class="resizer-vip"></div>
+              </th>
+              <th class="sortable-vip" data-sort-key="escola" style="width:340px;">
+                <div class="th-content-vip"><span>Unidade Escolar</span><span class="sort-icon-vip">↕</span></div>
+                <div class="resizer-vip"></div>
+              </th>
+              <th class="sortable-vip" data-sort-key="cartao" style="width:170px;">
+                <div class="th-content-vip"><span>Nº do cartão</span><span class="sort-icon-vip">↕</span></div>
+                <div class="resizer-vip"></div>
+              </th>
+              <th class="sortable-vip col-valor" data-sort-key="valor" style="width:120px;">
+                <div class="th-content-vip"><span>Valor limite</span><span class="sort-icon-vip">↕</span></div>
+                <div class="resizer-vip"></div>
+              </th>
+              <th class="no-print" style="width:40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="comprovante-tbody">
+            <tr><td colspan="9" style="text-align:center; padding:2rem;">Nenhum registro adicionado. Filtre a aba "Relatório" pela remessa desejada e clique em "Adicionar Selecionados ao VIP".</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="comprovante-footer-box">
+        <span>Serviço de Atendimento ao Cartão telefones Capitais e Regiões Metropolitanas: 4003-0107 / 4004-0001</span>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-relatorio-custom">
+      <div class="header-title">
+        <span>📄 Gerar Relatório</span>
+        <span class="badge" id="rel-custom-total-records">0 linha(s) no relatório</span>
+      </div>
+
+      <div class="rel-custom-toolbar-hint">
+        💡 <strong>Como funciona:</strong> as colunas abaixo são as <strong>mesmas visíveis</strong> na tabela principal. Selecione linhas na aba <strong>Relatório</strong> e clique em <strong>"📄 Adicionar ao Relatório"</strong>. Cada adição é <strong>incremental</strong>. Clique no <strong>cabeçalho</strong> de qualquer coluna para <strong>ordenar</strong>. Todas as colunas que contenham <strong>"valor"</strong> no nome terão <strong>soma automática no rodapé</strong>.
+      </div>
+
+      <div class="toolbar">
+        <div class="actions-group">
+          <button type="button" class="btn btn-primary" id="btn-rel-custom-add-selected">➕ Adicionar Selecionados do Relatório</button>
+          <button type="button" class="btn btn-secondary" id="btn-rel-custom-autofit">📏 Auto-ajustar Colunas</button>
+          <button type="button" class="btn btn-danger" id="btn-rel-custom-clear">🗑️ Limpar Relatório</button>
+        </div>
+        <div class="actions-group">
+          <button type="button" class="btn btn-print" id="btn-rel-custom-print">🖨️ Imprimir</button>
+          <button type="button" class="btn btn-excel" id="btn-rel-custom-excel">📊 Excel</button>
+          <button type="button" class="btn btn-pdf" id="btn-rel-custom-pdf">📄 PDF</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper" style="max-height: 75vh;">
+        <table id="rel-custom-table">
+          <thead>
+            <tr id="rel-custom-thead-tr">
+              <th>Nenhuma coluna visível</th>
+            </tr>
+          </thead>
+          <tbody id="rel-custom-tbody">
+            <tr><td class="rel-custom-empty">Selecione as linhas na aba Relatório e clique em "📄 Adicionar ao Relatório".</td></tr>
+          </tbody>
+          <tfoot id="rel-custom-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div class="pdf-preview-overlay" id="pdf-preview-overlay">
+    <div class="pdf-preview-modal">
+      <div class="pdf-preview-header">
+        <div class="title">📄 Preview do PDF — Relatório Gerador PNAE 2026</div>
+        <div class="actions">
+          <button type="button" class="btn btn-print" id="btn-preview-print">🖨️ Imprimir</button>
+          <button type="button" class="btn btn-success" id="btn-preview-save">💾 Salvar</button>
+          <button type="button" class="btn btn-danger" id="btn-preview-close">✕ Fechar</button>
+        </div>
+      </div>
+      <div class="pdf-preview-body">
+        <iframe id="pdf-preview-iframe" title="Preview do PDF"></iframe>
+      </div>
+      <div class="pdf-preview-footer">
+        <span id="pdf-preview-info">—</span>
+        <span>💡 Você pode revisar antes de salvar ou imprimir.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="filter-dropdown-float" id="filterDropdownFloat">
+    <div class="filter-dd-search-wrapper">
+      <input type="text" class="filter-dd-search" id="filterDdSearch" placeholder="Pesquisar valor..." autocomplete="off">
+    </div>
+    <div class="filter-dd-list" id="filterDdList"></div>
+    <div class="filter-dd-footer">
+      <span id="filterDdCount">0 valores</span>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span class="btn-multi-hint" id="filterDdMultiHint" title="Marque várias opções">☑ múltiplo</span>
+        <button type="button" class="btn-clear-dd" id="filterDdClear">Limpar</button>
+        <button type="button" class="btn-apply-dd" id="filterDdApply">Aplicar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      DEPLOY_URL: 'https://script.google.com/macros/s/AKfycbygTdTIXK8MN80m9Qse9DrkUbYI3rCRFj9LklgQ2fV7URzrc_pvjKj7duwrxW_p_rgQ/exec'
+    };
+
+    let rawHeaders = [];
+    let rawRows = [];
+    let filteredRows = [];
+    let columnVisibility = [];
+    let sortState = { colIndex: -1, asc: true };
+    let valueColumnIndex = -1;
+    let bancoColumnIndex = -1;
+    let valorMaximoColumnIndex = -1;
+    let isDataLoaded = false;
+    let filterValues = {};
+    let cellY1Value = '';
+    let originalValueColumnIndex = -1;
+
+    let csvData = [];
+    let comprovanteData = [];
+    let vipSort = { key: null, direction: 'asc' };
+    let vipSelectedRows = new Set();
+
+    let codSecFilterSet = new Set();
+    let selectedRows = new Set();
+
+    let relCustomRows = [];
+    let relCustomSort = { colIndex: null, direction: 'asc' };
+
+    let comprovanteInfo = {
+      cliente: 'Secretaria da Educação da Bahia - SEC',
+      remessa: '',
+      data: ''
+    };
+
+    const CSV_COLUMNS_KEYS = [
+      'CNPJ', 'INEP', 'codigo sec', 'Banco', 'agencia', 'Conta',
+      'Data do Recebimento', 'Parcela', 'Valor de Custeio', 'Valor de Capital',
+      'observação', 'acao', 'finalidade', 'remessa', 'processo sei'
+    ];
+
+    const ACAO_FIXA = '85-0';
+
+    const PARCELAS_LIST = [];
+    for (let i = 0; i <= 12; i++) PARCELAS_LIST.push(String(i));
+    for (let i = 0; i <= 12; i++) PARCELAS_LIST.push(`${i},13`);
+    for (let i = 0; i <= 12; i++) PARCELAS_LIST.push(`${i},15`);
+
+    const EXACT_MATCH_COLUMNS = ['NTE', 'COD SEC', 'CARTAO', 'REMESSA', 'PROCESSO', 'MUNICIPIO'];
+    const CURRENCY_COLUMNS = ['BANCO', 'VALOR MAXIMO', 'VALOR ORIGINAL'];
+
+    const ROW_HEIGHT = 30;
+    const BUFFER_ROWS = 8;
+
+    let _virtualScrollBound = false;
+    let _lastRangeStart = -1;
+    let _lastRangeEnd = -1;
+    let _forceRender = false;
+    let _filterDebounceTimer = null;
+
+    let _vipVirtualScrollBound = false;
+    let _vipLastRangeStart = -1;
+    let _vipLastRangeEnd = -1;
+
+    let _colIdxCache = {};
+    let _datalistCache = { signature: '', valuesByCol: {} };
+
+    let _ddState = {
+      activeColIdx: null,
+      currentOptions: [],
+      pendingValues: []
+    };
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      closeFilterDropdown();
+
+      if (tabName === 'relatorio') {
+        document.getElementById('tab-btn-relatorio').classList.add('active');
+        document.getElementById('tab-relatorio').classList.add('active');
+        requestAnimationFrame(() => { _lastRangeStart = -1; _lastRangeEnd = -1; renderTable(); });
+      } else if (tabName === 'csv') {
+        document.getElementById('tab-btn-csv').classList.add('active');
+        document.getElementById('tab-csv').classList.add('active');
+      } else if (tabName === 'comprovante') {
+        document.getElementById('tab-btn-comprovante').classList.add('active');
+        document.getElementById('tab-comprovante').classList.add('active');
+        setTimeout(() => {
+          makeComprovanteResizable();
+          updateVipSortIcons();
+          _vipLastRangeStart = -1;
+          _vipLastRangeEnd = -1;
+          renderComprovante();
+        }, 50);
+      } else if (tabName === 'relatorio-custom') {
+        document.getElementById('tab-btn-relatorio-custom').classList.add('active');
+        document.getElementById('tab-relatorio-custom').classList.add('active');
+        renderRelatorioCustom();
+        setTimeout(() => autoFitRelatorioCustomColumns(), 60);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadReportData();
+      setupDropdownListeners();
+      setupExportListeners();
+      setupCsvListeners();
+      setupComprovanteListeners();
+      setupVipSortListeners();
+      setupCodSecFilterListeners();
+      setupPdfPreviewListeners();
+      setupFilterDropdownListeners();
+      setupRelatorioCustomListeners();
+      bindGlobalListeners();
+
+      document.getElementById('btn-clear-filters').addEventListener('click', clearAllFilters);
+      document.getElementById('btn-add-to-csv').addEventListener('click', () => addToCsv(false));
+      document.getElementById('btn-add-selected-csv').addEventListener('click', () => addToCsv(true));
+      document.getElementById('btn-open-add-comprovante').addEventListener('click', () => addToComprovante(false));
+      document.getElementById('btn-add-selected-vip').addEventListener('click', () => addToComprovante(true));
+      document.getElementById('btn-add-selected-rel-custom').addEventListener('click', addSelectedToRelatorioCustom);
+      document.getElementById('btn-clear-selection').addEventListener('click', clearSelection);
+      populateBulkParcela();
+
+      document.getElementById('btn-auto-fit-columns').addEventListener('click', autoFitAllColumns);
+      document.getElementById('btn-auto-fit-columns').addEventListener('dblclick', () => {
+        document.querySelectorAll('#report-table thead th').forEach(th => {
+          if (th.classList.contains('checkbox-col')) return;
+          th.style.width = '160px';
+          th.style.minWidth = '160px';
+        });
+        showToast('↩️ Larguras restauradas para o padrão (160px).', 'success');
+      });
+
+      document.getElementById('comprovante-cliente').addEventListener('input', (e) => { comprovanteInfo.cliente = e.target.value; });
+      document.getElementById('comprovante-remessa').addEventListener('input', (e) => { comprovanteInfo.remessa = e.target.value; });
+      document.getElementById('comprovante-data').addEventListener('input', (e) => { comprovanteInfo.data = e.target.value; });
+
+      const vipHeaderCb = document.getElementById('vip-header-select-all');
+      if (vipHeaderCb) {
+        vipHeaderCb.addEventListener('change', (e) => {
+          if (e.target.checked) comprovanteData.forEach((_, idx) => vipSelectedRows.add(idx));
+          else vipSelectedRows.clear();
+          renderComprovante();
+        });
+      }
+
+      document.getElementById('btn-refresh').addEventListener('click', () => {
+        document.getElementById('btn-refresh').disabled = true;
+        loadReportData();
+      });
+
+      window.addEventListener('resize', closeFilterDropdown);
+      document.getElementById('table-wrapper').addEventListener('scroll', () => {
+        if (_ddState.activeColIdx !== null) positionFilterDropdown();
+      }, { passive: true });
+    });
+
+    function bindGlobalListeners() {
+      document.addEventListener('change', (e) => {
+        if (e.target.classList.contains('row-checkbox')) {
+          const rowIdx = parseInt(e.target.dataset.rowIndex);
+          if (e.target.checked) selectedRows.add(rowIdx);
+          else selectedRows.delete(rowIdx);
+          const tr = e.target.closest('tr');
+          if (tr) tr.classList.toggle('selected-row', e.target.checked);
+          updateSelectionUI();
+          updateHeaderCheckbox();
+          updateFilterSummary(filteredRows);
+        }
+        if (e.target.id === 'header-select-all') {
+          toggleSelectAllPage(e.target.checked);
+        }
+        if (e.target.classList.contains('vip-row-checkbox')) {
+          const idx = parseInt(e.target.dataset.vipIdx);
+          if (e.target.checked) vipSelectedRows.add(idx);
+          else vipSelectedRows.delete(idx);
+          const tr = e.target.closest('tr');
+          if (tr) tr.classList.toggle('selected-row', e.target.checked);
+          updateVipSelectionUI();
+          updateVipHeaderCheckbox();
+        }
+      });
+
+      document.addEventListener('input', (e) => {
+        if (e.target.classList.contains('column-filter')) {
+          const idx = e.target.dataset.colIndex;
+          const inputEl = e.target;
+          clearTimeout(_filterDebounceTimer);
+          _filterDebounceTimer = setTimeout(() => {
+            const value = inputEl.value.trim();
+            if (value) {
+              inputEl.classList.add('active');
+              delete filterValues[idx];
+              inputEl.classList.remove('multi-active');
+              filterValues['__text__' + idx] = value;
+            } else {
+              inputEl.classList.remove('active');
+              delete filterValues['__text__' + idx];
+            }
+            applyFilters();
+          }, 250);
+        }
+        if (e.target.classList.contains('comprovante-processo-input')) {
+          const idx = parseInt(e.target.dataset.idx);
+          if (comprovanteData[idx]) comprovanteData[idx].processoSei = e.target.value;
+        }
+      });
+
+      document.getElementById('report-thead-tr').addEventListener('click', (e) => {
+        if (e.target.closest('.resizer')) return;
+        if (e.target.closest('.filter-dropdown-btn')) return;
+        if (e.target.closest('.column-filter')) return;
+        if (e.target.closest('.filter-input-wrapper')) return;
+        const titleEl = e.target.closest('.column-title');
+        if (titleEl) {
+          const idx = parseInt(titleEl.dataset.colIndex);
+          sortTable(idx);
+        }
+      });
+
+      document.getElementById('comprovante-tbody').addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-remove-row')) {
+          const idx = parseInt(e.target.dataset.idx);
+          comprovanteData.splice(idx, 1);
+          vipSelectedRows.clear();
+          _vipLastRangeStart = -1;
+          _vipLastRangeEnd = -1;
+          renderComprovante();
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.classList.contains('column-filter')) {
+          e.preventDefault();
+          clearTimeout(_filterDebounceTimer);
+          const idx = e.target.dataset.colIndex;
+          const value = e.target.value.trim();
+          if (value) {
+            e.target.classList.add('active');
+            delete filterValues[idx];
+            e.target.classList.remove('multi-active');
+            filterValues['__text__' + idx] = value;
+          } else {
+            e.target.classList.remove('active');
+            delete filterValues['__text__' + idx];
+          }
+          applyFilters();
+        }
+        if (e.key === 'Escape') closeFilterDropdown();
+      });
+    }
+
+    function setupFilterDropdownListeners() {
+      const dd = document.getElementById('filterDropdownFloat');
+      const searchInput = document.getElementById('filterDdSearch');
+      const applyBtn = document.getElementById('filterDdApply');
+      const clearBtn = document.getElementById('filterDdClear');
+
+      searchInput.addEventListener('input', () => {
+        renderFilterDropdownList(searchInput.value.trim());
+      });
+
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeFilterDropdown();
+      });
+
+      applyBtn.addEventListener('click', applyFilterFromDropdown);
+
+      clearBtn.addEventListener('click', () => {
+        const idx = _ddState.activeColIdx;
+        if (idx === null) return;
+        delete filterValues[idx];
+        delete filterValues['__text__' + idx];
+        const inp = document.querySelector(`.column-filter[data-col-index="${idx}"]`);
+        if (inp) { inp.value = ''; inp.classList.remove('active', 'multi-active'); }
+        const btn = document.querySelector(`.filter-dropdown-btn[data-col-index="${idx}"]`);
+        if (btn) btn.classList.remove('multi-active');
+        _ddState.pendingValues = [];
+        closeFilterDropdown();
+        applyFilters();
+        showToast('Filtro limpo.', 'success');
+      });
+
+      document.addEventListener('mousedown', (e) => {
+        if (_ddState.activeColIdx === null) return;
+        if (dd.contains(e.target)) return;
+        if (e.target.closest('.filter-dropdown-btn')) return;
+        if (e.target.closest('.column-filter')) return;
+        closeFilterDropdown();
+      });
+    }
+
+    function openFilterDropdown(colIdx, anchorEl) {
+      _ddState.activeColIdx = colIdx;
+      _ddState.currentOptions = getUniqueValuesCascading(colIdx);
+
+      const existing = Array.isArray(filterValues[colIdx]) ? filterValues[colIdx] : [];
+      _ddState.pendingValues = existing.slice();
+
+      const dd = document.getElementById('filterDropdownFloat');
+      const searchInput = document.getElementById('filterDdSearch');
+
+      searchInput.value = '';
+      renderFilterDropdownList('');
+
+      dd.classList.add('active');
+      positionFilterDropdown(anchorEl);
+      setTimeout(() => searchInput.focus(), 20);
+    }
+
+    function positionFilterDropdown(anchorEl) {
+      const dd = document.getElementById('filterDropdownFloat');
+      let anchor = anchorEl;
+
+      if (!anchor && _ddState.activeColIdx !== null) {
+        anchor = document.querySelector(`.filter-dropdown-btn[data-col-index="${_ddState.activeColIdx}"]`);
+      }
+      if (!anchor) return;
+
+      const rect = anchor.getBoundingClientRect();
+      const ddWidth = Math.max(280, Math.min(480, rect.width * 8));
+      dd.style.width = ddWidth + 'px';
+
+      let left = rect.left;
+      if (left + ddWidth > window.innerWidth - 10) left = window.innerWidth - ddWidth - 10;
+      if (left < 5) left = 5;
+
+      let top = rect.bottom + 4;
+      const ddHeight = Math.min(420, window.innerHeight * 0.7);
+      if (top + ddHeight > window.innerHeight - 10) {
+        top = rect.top - ddHeight - 4;
+        if (top < 5) top = 5;
+      }
+
+      dd.style.left = left + 'px';
+      dd.style.top = top + 'px';
+      dd.style.maxHeight = ddHeight + 'px';
+    }
+
+    function renderFilterDropdownList(searchTerm) {
+      const list = document.getElementById('filterDdList');
+      const countEl = document.getElementById('filterDdCount');
+      const opts = _ddState.currentOptions || [];
+      const pending = _ddState.pendingValues || [];
+
+      const term = normalizeText(searchTerm);
+      const filtered = term ? opts.filter(o => normalizeText(o).includes(term)) : opts;
+      const parts = [];
+
+      if (filtered.length === 0) {
+        parts.push(`<div class="filter-dd-empty">Nenhum valor encontrado</div>`);
+      } else {
+        filtered.forEach(opt => {
+          const isSel = pending.some(v => normalizeText(v) === normalizeText(opt));
+          parts.push(
+            `<label class="filter-dd-item${isSel ? ' selected' : ''}" data-value="${escapeHtmlAttr(opt)}">` +
+            `<input type="checkbox" class="dd-checkbox" ${isSel ? 'checked' : ''} data-value="${escapeHtmlAttr(opt)}">` +
+            `<span class="dd-item-text">${escapeHtml(opt)}</span>` +
+            `</label>`
+          );
+        });
+      }
+
+      list.innerHTML = parts.join('');
+      countEl.textContent = term
+        ? `${filtered.length} de ${opts.length} • ${pending.length} marcado(s)`
+        : `${opts.length} valor${opts.length === 1 ? '' : 'es'} • ${pending.length} marcado(s)`;
+
+      list.querySelectorAll('.filter-dd-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+          const val = el.getAttribute('data-value');
+          const checkbox = el.querySelector('.dd-checkbox');
+
+          const idxInPending = pending.findIndex(v => normalizeText(v) === normalizeText(val));
+          if (idxInPending >= 0) {
+            pending.splice(idxInPending, 1);
+            if (checkbox) checkbox.checked = false;
+            el.classList.remove('selected');
+          } else {
+            pending.push(val);
+            if (checkbox) checkbox.checked = true;
+            el.classList.add('selected');
+          }
+
+          countEl.textContent = term
+            ? `${filtered.length} de ${opts.length} • ${pending.length} marcado(s)`
+            : `${opts.length} valor${opts.length === 1 ? '' : 'es'} • ${pending.length} marcado(s)`;
+        });
+      });
+    }
+
+    function applyFilterFromDropdown() {
+      const idx = _ddState.activeColIdx;
+      if (idx === null) return;
+      const values = (_ddState.pendingValues || []).slice();
+      const inp = document.querySelector(`.column-filter[data-col-index="${idx}"]`);
+      const btn = document.querySelector(`.filter-dropdown-btn[data-col-index="${idx}"]`);
+
+      delete filterValues['__text__' + idx];
+
+      if (values.length > 0) {
+        filterValues[idx] = values;
+        if (inp) {
+          inp.value = values.length === 1 ? values[0] : `[${values.length} selecionados]`;
+          inp.classList.remove('active');
+          inp.classList.add('multi-active');
+        }
+        if (btn) btn.classList.add('multi-active');
+      } else {
+        delete filterValues[idx];
+        if (inp) { inp.value = ''; inp.classList.remove('active', 'multi-active'); }
+        if (btn) btn.classList.remove('multi-active');
+      }
+
+      closeFilterDropdown();
+      applyFilters();
+    }
+
+    function closeFilterDropdown() {
+      const dd = document.getElementById('filterDropdownFloat');
+      dd.classList.remove('active');
+      _ddState.activeColIdx = null;
+      _ddState.pendingValues = [];
+      _ddState.currentOptions = [];
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[c]);
+    }
+    function escapeHtmlAttr(str) { return escapeHtml(str); }
+
+    function matchesFilterValue(value, filter) {
+      if (filter === undefined || filter === null) return true;
+      if (Array.isArray(filter)) {
+        if (filter.length === 0) return true;
+        const norm = normalizeText(String(value));
+        return filter.some(f => normalizeText(f) === norm);
+      }
+      return normalizeText(String(value)).includes(normalizeText(String(filter)));
+    }
+
+    function buildFilterSignature(excludeIdx) {
+      const parts = [];
+      const keys = Object.keys(filterValues).sort();
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (k.startsWith('__text__')) {
+          const kNum = parseInt(k.replace('__text__', ''));
+          if (kNum === excludeIdx) continue;
+          parts.push(`${k}=${normalizeText(filterValues[k])}`);
+        } else {
+          const kNum = parseInt(k);
+          if (kNum === excludeIdx) continue;
+          const v = filterValues[k];
+          if (Array.isArray(v)) parts.push(`${k}=[${v.map(normalizeText).sort().join('|')}]`);
+          else parts.push(`${k}=${normalizeText(v)}`);
+        }
+      }
+      if (codSecFilterSet.size > 0) {
+        parts.push(`__codsec=${Array.from(codSecFilterSet).sort().join('|')}`);
+      }
+      return parts.join('&&');
+    }
+
+    function rowPassesFiltersExcept(row, excludeIdx) {
+      const keys = Object.keys(filterValues);
+      const codSecIdx = codSecFilterSet.size > 0 ? findCodSecColumnIndex() : -1;
+
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        let idx, filterValue, isText = false;
+        if (key.startsWith('__text__')) {
+          idx = parseInt(key.replace('__text__', ''));
+          filterValue = filterValues[key];
+          isText = true;
+        } else {
+          idx = parseInt(key);
+          filterValue = filterValues[key];
+        }
+        if (idx === excludeIdx) continue;
+        if (isNaN(idx)) continue;
+
+        let cellValue = row[idx];
+        const headerName = rawHeaders[idx] || '';
+
+        if (isDateColumnByName(headerName)) {
+          const dateFilter = parseDateFilter(typeof filterValue === 'string' ? filterValue : '');
+          if (dateFilter) {
+            if (!dateMatchesFilter(cellValue, dateFilter)) return false;
+          } else {
+            const formattedCell = formatDateBR(cellValue);
+            if (!matchesFilterValue(formattedCell, filterValue)) return false;
+          }
+          continue;
+        }
+
+        if (cellValue instanceof Date) cellValue = cellValue.toLocaleDateString('pt-BR');
+
+        const isExact = isExactMatchColumn(headerName);
+        const isMunicipio = normalizeText(headerName).includes('municipio');
+
+        if (Array.isArray(filterValue)) {
+          const cellStr = String(cellValue || '').trim();
+          let cellToCompare = cellStr;
+          if (cellStr.includes('/')) cellToCompare = cellStr.split('/')[0].trim();
+          const norm = normalizeText(cellToCompare);
+          if (!filterValue.some(f => normalizeText(f) === norm)) return false;
+        } else if (isExact || isMunicipio) {
+          const cellStr = String(cellValue || '').trim();
+          const filterStr = String(filterValue).trim();
+          let cellToCompare = cellStr;
+          if (cellStr.includes('/')) cellToCompare = cellStr.split('/')[0].trim();
+          if (normalizeText(cellToCompare) !== normalizeText(filterStr)) return false;
+        } else {
+          if (!normalizeText(String(cellValue || '')).includes(normalizeText(String(filterValue)))) return false;
+        }
+      }
+
+      if (codSecIdx !== -1 && codSecIdx !== excludeIdx) {
+        const val = normalizeText(String(row[codSecIdx] ?? ''));
+        if (!codSecFilterSet.has(val)) return false;
+      }
+
+      return true;
+    }
+
+    function getUniqueValuesCascading(colIndex) {
+      const signature = buildFilterSignature(colIndex) + `||col=${colIndex}`;
+
+      if (_datalistCache.signature === signature && _datalistCache.valuesByCol[colIndex]) {
+        return _datalistCache.valuesByCol[colIndex];
+      }
+
+      const set = new Set();
+      const headerName = rawHeaders[colIndex] || '';
+      const isDateCol = isDateColumnByName(headerName);
+      const isCurrency = isCurrencyColumn(colIndex);
+      const hasAnyFilter = Object.keys(filterValues).length > 0 || codSecFilterSet.size > 0;
+
+      for (let r = 0; r < rawRows.length; r++) {
+        const row = rawRows[r];
+        if (hasAnyFilter && !rowPassesFiltersExcept(row, colIndex)) continue;
+
+        let val = row[colIndex];
+        if (val === null || val === undefined) continue;
+
+        if (isDateCol) {
+          const formatted = formatDateBR(val);
+          if (formatted) set.add(formatted);
+        } else if (isCurrency) {
+          const num = extractNumericValue(val);
+          if (num !== 0) set.add(formatCurrencyBR(num));
+        } else {
+          const s = String(val).trim();
+          if (s !== '') set.add(s);
+        }
+      }
+
+      const arr = Array.from(set);
+      arr.sort((a, b) => {
+        const na = extractNumericValue(a);
+        const nb = extractNumericValue(b);
+        const aIsNum = /^-?[\d.,\sR$]+$/.test(a) && !isNaN(na);
+        const bIsNum = /^-?[\d.,\sR$]+$/.test(b) && !isNaN(nb);
+        if (aIsNum && bIsNum) return na - nb;
+        const sa = normalizeText(a);
+        const sb = normalizeText(b);
+        if (sa < sb) return -1;
+        if (sa > sb) return 1;
+        return 0;
+      });
+
+      _datalistCache.signature = signature;
+      _datalistCache.valuesByCol = { [colIndex]: arr };
+      return arr;
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type}`;
+      setTimeout(() => toast.classList.add('show'), 100);
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    function formatDateBR(val) {
+      if (val === null || val === undefined || val === '') return '';
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (/^\d{2}\/\d{2}\/\d{4}/.test(trimmed)) return trimmed.substring(0, 10);
+        const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+      }
+      if (val instanceof Date && !isNaN(val.getTime())) {
+        return `${String(val.getDate()).padStart(2, '0')}/${String(val.getMonth() + 1).padStart(2, '0')}/${val.getFullYear()}`;
+      }
+      const parsed = new Date(val);
+      if (!isNaN(parsed.getTime())) {
+        return `${String(parsed.getDate()).padStart(2, '0')}/${String(parsed.getMonth() + 1).padStart(2, '0')}/${parsed.getFullYear()}`;
+      }
+      return String(val).trim();
+    }
+
+    function formatNumberBR(val) {
+      let num = extractNumericValue(val);
+      return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function isDateColumnByName(headerName) {
+      if (!headerName) return false;
+      const h = normalizeText(headerName);
+      return h.includes('data') || h.includes('dt ') || h === 'dt' || h.includes('vencimento') || h.includes('recebimento');
+    }
+
+    function looksLikeISODate(val) {
+      if (typeof val !== 'string') return false;
+      return /^\d{4}-\d{2}-\d{2}T/.test(val.trim()) || /^\d{4}-\d{2}-\d{2}$/.test(val.trim());
+    }
+
+    function dateToSortKey(val) {
+      if (!val) return 0;
+      const s = String(val).trim();
+      const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (iso) return parseInt(`${iso[1]}${iso[2]}${iso[3]}`, 10);
+      const br = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      if (br) return parseInt(`${br[3]}${br[2]}${br[1]}`, 10);
+      return 0;
+    }
+
+    function compareDates(a, b) {
+      const ka = dateToSortKey(a);
+      const kb = dateToSortKey(b);
+      if (ka < kb) return -1;
+      if (ka > kb) return 1;
+      return 0;
+    }
+
+    function parseDateFilter(texto) {
+      if (!texto || typeof texto !== 'string') return null;
+      const t = texto.trim();
+      const full = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (full) return { type: 'full', day: full[1].padStart(2, '0'), month: full[2].padStart(2, '0'), year: full[3] };
+      const dm = t.match(/^(\d{1,2})\/(\d{1,2})$/);
+      if (dm) return { type: 'dm', day: dm[1].padStart(2, '0'), month: dm[2].padStart(2, '0') };
+      const isoFull = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (isoFull) return { type: 'full', day: isoFull[3], month: isoFull[2], year: isoFull[1] };
+      return null;
+    }
+
+    function dateMatchesFilter(val, dateFilter) {
+      if (!dateFilter) return false;
+      const brFormatted = formatDateBR(val);
+      if (!brFormatted) return false;
+      const parts = brFormatted.split('/');
+      if (parts.length < 3) return false;
+      const [day, month, year] = parts;
+      if (dateFilter.type === 'full') return day === dateFilter.day && month === dateFilter.month && year === dateFilter.year;
+      if (dateFilter.type === 'dm') return day === dateFilter.day && month === dateFilter.month;
+      return false;
+    }
+
+    function normalizeText(str) {
+      if (!str) return '';
+      return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    }
+
+    function setupCodSecFilterListeners() {
+      const panel = document.getElementById('codsec-panel');
+      const header = document.getElementById('codsec-panel-header');
+      header.addEventListener('click', () => panel.classList.toggle('collapsed'));
+
+      document.getElementById('btn-codsec-apply').addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyCodSecFilter();
+      });
+
+      document.getElementById('btn-codsec-clear').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('codsec-textarea').value = '';
+        codSecFilterSet.clear();
+        document.getElementById('codsec-badge-count').style.display = 'none';
+        updateCodSecInfoBar(0, 0, 0);
+        applyFilters();
+        showToast('🧹 Filtro Código SEC limpo.', 'success');
+      });
+
+      document.getElementById('btn-codsec-selectall').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (filteredRows.length === 0) {
+          showToast('Nenhum resultado para selecionar.', 'error');
+          return;
+        }
+        selectedRows.clear();
+        for (let i = 0; i < filteredRows.length; i++) selectedRows.add(i);
+        document.querySelectorAll('.row-checkbox').forEach(cb => {
+          cb.checked = true;
+          const tr = cb.closest('tr');
+          if (tr) tr.classList.add('selected-row');
+        });
+        updateSelectionUI();
+        updateFilterSummary(filteredRows);
+        showToast(`✅ ${filteredRows.length} registro(s) selecionado(s)!`, 'success');
+      });
+
+      let pasteTimer = null;
+      document.getElementById('codsec-textarea').addEventListener('input', () => {
+        clearTimeout(pasteTimer);
+        pasteTimer = setTimeout(() => {
+          const codes = parseCodSecInput(document.getElementById('codsec-textarea').value);
+          document.getElementById('codsec-badge-count').style.display = codes.length > 0 ? 'inline' : 'none';
+          document.getElementById('codsec-badge-count').textContent = `${codes.length} código(s) digitado(s)`;
+        }, 200);
+      });
+    }
+
+    function parseCodSecInput(texto) {
+      if (!texto) return [];
+      return texto.split(/[\s,;]+/).map(s => s.trim()).filter(s => s.length > 0);
+    }
+
+    function findCodSecColumnIndex() {
+      if (_colIdxCache.codSec !== undefined) return _colIdxCache.codSec;
+      const idx = rawHeaders.findIndex(h => {
+        const n = normalizeText(h);
+        return n === 'cod sec' || n === 'codigo sec' || n === 'cod. sec' || n === 'codsec';
+      });
+      _colIdxCache.codSec = idx;
+      return idx;
+    }
+
+    function applyCodSecFilter() {
+      const texto = document.getElementById('codsec-textarea').value;
+      const codes = parseCodSecInput(texto);
+      codSecFilterSet = new Set(codes.map(c => normalizeText(c)));
+
+      if (codSecFilterSet.size === 0) {
+        document.getElementById('codsec-badge-count').style.display = 'none';
+        updateCodSecInfoBar(0, 0, 0);
+        applyFilters();
+        showToast('Nenhum código informado. Filtro limpo.', 'success');
+        return;
+      }
+
+      const codSecIdx = findCodSecColumnIndex();
+      if (codSecIdx === -1) {
+        showToast('⚠️ Coluna "Cod SEC" não encontrada!', 'error');
+        updateCodSecInfoBar(codes.length, 0, codes.length);
+        return;
+      }
+
+      const codesFound = new Set();
+      for (let i = 0; i < rawRows.length; i++) {
+        const val = normalizeText(String(rawRows[i][codSecIdx] ?? ''));
+        if (val && codSecFilterSet.has(val)) codesFound.add(val);
+      }
+
+      const naoEncontrados = codes.filter(c => !codesFound.has(normalizeText(c)));
+      applyFilters();
+
+      document.getElementById('codsec-badge-count').style.display = 'inline';
+      document.getElementById('codsec-badge-count').textContent = `${codes.length} código(s)`;
+      updateCodSecInfoBar(codes.length, codesFound.size, naoEncontrados.length);
+
+      if (naoEncontrados.length > 0) {
+        showToast(`⚠️ ${codesFound.size} encontrado(s). ${naoEncontrados.length} não localizado(s).`, 'error');
+      } else {
+        showToast(`✅ Filtro aplicado! ${codesFound.size} código(s) encontrado(s).`, 'success');
+      }
+    }
+
+    function updateCodSecInfoBar(total, encontrados, naoEncontrados) {
+      const chipStatus = document.getElementById('codsec-chip-status');
+      const chipFound = document.getElementById('codsec-chip-found');
+      const chipNotFound = document.getElementById('codsec-chip-notfound');
+
+      if (total === 0) {
+        chipStatus.textContent = 'Aguardando códigos...';
+        chipStatus.className = 'chip';
+        chipFound.style.display = 'none';
+        chipNotFound.style.display = 'none';
+        return;
+      }
+      chipStatus.textContent = `${total} código(s) informado(s)`;
+      chipStatus.className = 'chip';
+      if (encontrados > 0) {
+        chipFound.style.display = 'inline';
+        chipFound.textContent = `${encontrados} encontrado(s)`;
+      } else chipFound.style.display = 'none';
+      if (naoEncontrados > 0) {
+        chipNotFound.style.display = 'inline';
+        chipNotFound.textContent = `${naoEncontrados} não encontrado(s)`;
+      } else chipNotFound.style.display = 'none';
+    }
+
+    function setupExportListeners() {
+      document.getElementById('btn-export-excel').addEventListener('click', exportToExcel);
+      document.getElementById('btn-export-pdf').addEventListener('click', exportToPDF);
+    }
+
+    function setupDropdownListeners() {
+      const btnToggle = document.getElementById('btn-toggle-columns');
+      const dropdown = document.getElementById('column-dropdown');
+      const btnSelectAll = document.getElementById('btn-select-all');
+
+      btnToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target) && e.target !== btnToggle) dropdown.classList.remove('active');
+      });
+
+      btnSelectAll.addEventListener('click', () => {
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach((cb, idx) => {
+          cb.checked = !allChecked;
+          columnVisibility[idx] = !allChecked;
+        });
+        applyColumnVisibility();
+        renderRelatorioCustom();
+      });
+    }
+
+    function loadReportData() {
+      const overlay = document.getElementById('loading-overlay');
+      overlay.style.display = 'flex';
+      document.getElementById('total-records').textContent = 'Carregando...';
+      document.getElementById('btn-refresh').disabled = true;
+
+      const tbody = document.getElementById('report-tbody');
+      tbody.innerHTML = '<tr><td colspan="22">Buscando relatoriopnae...</td></tr>';
+
+      document.getElementById('cell-y1-value').textContent = 'Carregando...';
+      document.getElementById('cell-y1-value').className = 'card-value loading';
+      document.getElementById('soma-valor-original').textContent = 'Carregando...';
+      document.getElementById('soma-valor-original').className = 'card-value loading';
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(processReportResponse)
+          .withFailureHandler(err => {
+            tbody.innerHTML = `<tr><td colspan="22">Erro: ${err.message}</td></tr>`;
+            overlay.style.display = 'none';
+            document.getElementById('btn-refresh').disabled = false;
+          })
+          .getReportData();
+      } else {
+        fetch(CONFIG.DEPLOY_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'getReport' })
+        })
+        .then(res => res.json())
+        .then(res => processReportResponse(res.data))
+        .catch(err => {
+          tbody.innerHTML = `<tr><td colspan="22">Erro de conexão: ${err}</td></tr>`;
+          overlay.style.display = 'none';
+          document.getElementById('btn-refresh').disabled = false;
+        });
+      }
+    }
+
+    function processReportResponse(data) {
+      const t0 = performance.now();
+      const overlay = document.getElementById('loading-overlay');
+      const tbody = document.getElementById('report-tbody');
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="22">Nenhum dado encontrado na aba relatoriopnae.</td></tr>';
+        overlay.style.display = 'none';
+        document.getElementById('btn-refresh').disabled = false;
+        return;
+      }
+
+      rawHeaders = data[0];
+      if (data.length > 0 && data[0] && data[0].length > 24) cellY1Value = data[0][24] || '';
+      rawRows = data.slice(1);
+
+      rawHeaders.pop();
+      for (let i = 0; i < rawRows.length; i++) rawRows[i].pop();
+
+      columnVisibility = rawHeaders.map(() => true);
+      isDataLoaded = true;
+      selectedRows.clear();
+      filterValues = {};
+      _colIdxCache = {};
+      _datalistCache = { signature: '', valuesByCol: {} };
+
+      document.getElementById('total-records').textContent = `${rawRows.length.toLocaleString()} registros`;
+
+      const y1Card = document.getElementById('cell-y1-value');
+      if (cellY1Value !== '' && cellY1Value !== null && cellY1Value !== undefined) {
+        const numValue = parseFloat(String(cellY1Value).replace(/[R$\s.]/g, '').replace(',', '.'));
+        if (!isNaN(numValue)) {
+          y1Card.textContent = numValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        } else y1Card.textContent = cellY1Value;
+        y1Card.className = 'card-value';
+      } else {
+        y1Card.textContent = 'Valor não encontrado';
+        y1Card.className = 'card-value error';
+      }
+
+      valueColumnIndex = -1;
+      bancoColumnIndex = -1;
+      valorMaximoColumnIndex = -1;
+      originalValueColumnIndex = -1;
+
+      rawHeaders.forEach((h, idx) => {
+        const hNorm = normalizeText(h).toUpperCase();
+        if (hNorm.includes('VALOR ORIGINAL') || hNorm.includes('VALORORIGINAL')) {
+          valueColumnIndex = idx;
+          originalValueColumnIndex = idx;
+        }
+        if (hNorm.includes('BANCO')) bancoColumnIndex = idx;
+        if (hNorm.includes('VALOR MAXIMO') || hNorm.includes('VALORMAXIMO')) valorMaximoColumnIndex = idx;
+      });
+
+      if (valueColumnIndex === -1) {
+        rawHeaders.forEach((h, idx) => {
+          const hNorm = normalizeText(h).toUpperCase();
+          if (hNorm.includes('VALOR') && !hNorm.includes('CT CJUSTO') && !hNorm.includes('CUSTO JUSTO') && !hNorm.includes('BANCO') && !hNorm.includes('MAXIMO')) {
+            if (valueColumnIndex === -1) valueColumnIndex = idx;
+          }
+        });
+      }
+
+      if (valueColumnIndex === -1 && rawHeaders.length > 9) valueColumnIndex = 9;
+
+      filteredRows = rawRows;
+      buildColumnCheckboxes();
+      renderHeader();
+      updateFilterSummary(filteredRows);
+      renderRelatorioCustom();
+
+      _lastRangeStart = -1;
+      _lastRangeEnd = -1;
+
+      requestAnimationFrame(() => {
+        renderTable();
+        overlay.style.display = 'none';
+        document.getElementById('btn-refresh').disabled = false;
+        const t1 = performance.now();
+        const loadTimeEl = document.getElementById('load-time');
+        if (loadTimeEl) loadTimeEl.textContent = `⚡ Carregamento total: ${(t1 - t0).toFixed(0)} ms`;
+        showToast(`Dados carregados: ${rawRows.length.toLocaleString()} registros em ${(t1 - t0).toFixed(0)} ms`, 'success');
+      });
+    }
+
+    function isCurrencyColumn(colIndex) {
+      if (colIndex === valueColumnIndex) return true;
+      if (colIndex === bancoColumnIndex) return true;
+      if (colIndex === valorMaximoColumnIndex) return true;
+      const headerName = rawHeaders[colIndex] || '';
+      const hNorm = normalizeText(headerName).toUpperCase();
+      return CURRENCY_COLUMNS.some(name => hNorm.includes(normalizeText(name).toUpperCase()));
+    }
+
+    function isNumericColumn(colIndex) {
+      if (isCurrencyColumn(colIndex)) return true;
+      const headerName = rawHeaders[colIndex] || '';
+      const h = normalizeText(headerName);
+      if (h === 'nte' || h.includes('nte')) return true;
+      if (h.includes('cod sec') || h.includes('codigo sec') || h === 'codsec') return true;
+      if (h.includes('cartao') || h.includes('cartão')) return true;
+      if (h.includes('parcela')) return true;
+      if (h.includes('remessa')) return true;
+      if (h.includes('processo')) return true;
+      if (h.includes('cnpj') || h.includes('inep') || h.includes('conta') || h.includes('agencia') || h.includes('agência')) return true;
+      return false;
+    }
+
+    function isProcessoColumn(headerName) {
+      if (!headerName) return false;
+      const h = normalizeText(headerName);
+      return h.includes('processo') || h === 'processo sei' || h.includes('processo sei');
+    }
+
+    function isWrapColumn(headerName) {
+      if (!headerName) return false;
+      const h = normalizeText(headerName);
+      return h.includes('municipio') || h.includes('município') || h.includes('escola') || h.includes('unidade escolar') || h.includes('nome');
+    }
+
+    function formatCurrencyBR(val) {
+      if (val === null || val === undefined || val === '') return '';
+      let num = val;
+      if (typeof val === 'string') {
+        let clean = val.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+        num = parseFloat(clean);
+      }
+      if (isNaN(num)) return val;
+      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function extractNumericValue(val) {
+      if (val === null || val === undefined || val === '') return 0;
+      if (typeof val === 'number') return val;
+
+      let s = String(val).trim();
+      if (s === '') return 0;
+      s = s.replace(/R\$\s*/g, '').replace(/\s/g, '');
+      if (s === '') return 0;
+
+      let neg = false;
+      if (s.startsWith('-')) { neg = true; s = s.substring(1); }
+
+      if (s.includes('.') && s.includes(',')) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else if (s.includes(',')) {
+        s = s.replace(',', '.');
+      } else if (s.includes('.')) {
+        const parts = s.split('.');
+        if (parts.length > 2) {
+          s = s.replace(/\./g, '');
+        } else if (parts.length === 2) {
+          if (parts[1].length === 3 && parts[0].length >= 1 && parts[0].length <= 3) {
+            s = s.replace('.', '');
+          }
+        }
+      }
+
+      const num = parseFloat(s);
+      if (isNaN(num)) return 0;
+      return neg ? -num : num;
+    }
+
+    function isValueColumn(headerName) {
+      if (!headerName) return false;
+      const h = normalizeText(headerName).toUpperCase();
+      return h.includes('VALOR') || h.includes('CUSTEIO') || h.includes('CAPITAL') ||
+        h.includes('ORIGINAL') || h.includes('MINIMO') || h.includes('MAXIMO');
+    }
+
+    function updateFilterSummary(rows) {
+      const countEl = document.getElementById('filter-count');
+      const loadingInfo = document.getElementById('loading-info');
+      countEl.textContent = rows.length.toLocaleString();
+
+      const temSelecao = selectedRows.size > 0;
+      const linhasParaSomar = temSelecao
+        ? Array.from(selectedRows).map(i => filteredRows[i]).filter(Boolean)
+        : rows;
+
+      let soma = 0;
+      if (valueColumnIndex !== -1) {
+        for (let i = 0; i < linhasParaSomar.length; i++) {
+          const row = linhasParaSomar[i];
+          if (valueColumnIndex < row.length) soma += extractNumericValue(row[valueColumnIndex]);
+        }
+      }
+
+      const somaCard = document.getElementById('soma-valor-original');
+      const cardWrapper = document.getElementById('card-soma');
+
+      somaCard.textContent = soma.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      somaCard.className = 'card-value';
+
+      const labelEl = cardWrapper.querySelector('.card-label');
+      if (temSelecao) {
+        cardWrapper.classList.remove('success');
+        cardWrapper.classList.add('warning');
+        cardWrapper.title = `Somando ${selectedRows.size} registro(s) selecionado(s)`;
+        if (labelEl) labelEl.textContent = `💰 Soma Selecionados (${selectedRows.size})`;
+      } else {
+        cardWrapper.classList.remove('warning');
+        cardWrapper.classList.add('success');
+        cardWrapper.title = 'Somando todos os registros filtrados';
+        if (labelEl) labelEl.textContent = '💰 Soma Valor Original';
+      }
+
+      if (rows.length === rawRows.length) loadingInfo.textContent = `(Total: ${rawRows.length.toLocaleString()} registros)`;
+      else loadingInfo.textContent = `(Filtrado de ${rawRows.length.toLocaleString()} registros)`;
+    }
+
+    function buildColumnCheckboxes() {
+      const container = document.getElementById('column-checkboxes-container');
+      const parts = [];
+      rawHeaders.forEach((headerText, index) => {
+        const name = headerText || `Coluna ${index + 1}`;
+        parts.push(`<label class="column-option"><input type="checkbox" data-col-idx="${index}" ${columnVisibility[index] ? 'checked' : ''}>${name}</label>`);
+      });
+      container.innerHTML = parts.join('');
+
+      container.addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox' && e.target.dataset.colIdx !== undefined) {
+          const idx = parseInt(e.target.dataset.colIdx);
+          columnVisibility[idx] = e.target.checked;
+          applyColumnVisibility();
+          renderRelatorioCustom();
+        }
+      });
+    }
+
+    function applyColumnVisibility() {
+      columnVisibility.forEach((visible, index) => {
+        document.querySelectorAll(`.col-idx-${index}`).forEach(cell => {
+          if (visible) cell.classList.remove('col-hidden');
+          else cell.classList.add('col-hidden');
+        });
+      });
+    }
+
+    function isExactMatchColumn(headerName) {
+      const hNorm = normalizeText(headerName);
+      return EXACT_MATCH_COLUMNS.some(col => hNorm.includes(normalizeText(col)) || normalizeText(col).includes(hNorm));
+    }
+
+    function renderHeader() {
+      const theadTr = document.getElementById('report-thead-tr');
+      const parts = [];
+
+      parts.push(`<th class="checkbox-col"><input type="checkbox" id="header-select-all" title="Selecionar todos" style="width:18px;height:18px;cursor:pointer;accent-color:#fff;"></th>`);
+
+      rawHeaders.forEach((headerText, index) => {
+        let sortIcon = '';
+        if (sortState.colIndex === index) sortIcon = sortState.asc ? '▲' : '▼';
+
+        const isDateCol = isDateColumnByName(headerText);
+        const isExact = isExactMatchColumn(headerText);
+        let placeholder = 'Filtrar ou escolher...';
+        if (isDateCol) placeholder = 'Filtrar (dd/mm/aaaa)...';
+        else if (isExact) placeholder = 'Filtrar (exato)...';
+
+        const isMulti = Array.isArray(filterValues[index]);
+        const activeCls = (filterValues[index] || filterValues['__text__' + index]) ? ' active' : '';
+        const multiCls = isMulti ? ' multi-active' : '';
+        const currentValue = isMulti
+          ? (filterValues[index].length === 1 ? filterValues[index][0] : `[${filterValues[index].length} selecionados]`)
+          : (filterValues['__text__' + index] || filterValues[index] || '');
+
+        parts.push(`<th class="col-idx-${index}" style="min-width:140px; position:relative;">
+          <div class="header-content">
+            <div class="column-title" data-col-index="${index}">
+              <span>${headerText || `Coluna ${index + 1}`}</span>
+              <span class="sort-indicator ${sortState.colIndex === index ? (sortState.asc ? 'asc' : 'desc') : ''}" id="sort-indicator-${index}">${sortIcon}</span>
+            </div>
+            <div class="filter-input-wrapper">
+              <input type="text" class="column-filter${activeCls}${multiCls}" autocomplete="off" placeholder="${placeholder}" data-col-index="${index}" value="${escapeHtmlAttr(currentValue)}">
+              <button type="button" class="filter-dropdown-btn${isMulti ? ' multi-active' : ''}" data-col-index="${index}" title="Ver lista de valores (marque vários)">▼</button>
+            </div>
+          </div>
+          <div class="resizer"></div>
+        </th>`);
+      });
+
+      theadTr.innerHTML = parts.join('');
+
+      const headerCb = document.getElementById('header-select-all');
+      if (headerCb) {
+        headerCb.addEventListener('change', (e) => toggleSelectAllPage(e.target.checked));
+      }
+
+      theadTr.querySelectorAll('.filter-dropdown-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.colIndex);
+          if (_ddState.activeColIdx === idx) {
+            closeFilterDropdown();
+            return;
+          }
+          openFilterDropdown(idx, btn);
+        });
+      });
+
+      setTimeout(() => {
+        applyColumnVisibility();
+        makeColumnsResizable();
+      }, 30);
+    }
+
+    function applyFilters() {
+      const t0 = performance.now();
+      const keys = Object.keys(filterValues);
+      const hasColFilter = keys.some(k => {
+        const v = filterValues[k];
+        if (k.startsWith('__text__')) return !!v;
+        if (Array.isArray(v)) return v.length > 0;
+        return !!v;
+      });
+      const hasCodSecFilter = codSecFilterSet.size > 0;
+      const codSecIdx = hasCodSecFilter ? findCodSecColumnIndex() : -1;
+
+      if (!hasColFilter && !hasCodSecFilter) {
+        filteredRows = rawRows;
+      } else {
+        const result = [];
+        for (let r = 0; r < rawRows.length; r++) {
+          const row = rawRows[r];
+          let ok = true;
+
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            let idx, filterValue, isText = false;
+            if (key.startsWith('__text__')) {
+              idx = parseInt(key.replace('__text__', ''));
+              filterValue = filterValues[key];
+              isText = true;
+            } else {
+              idx = parseInt(key);
+              filterValue = filterValues[key];
+            }
+            if (isNaN(idx)) continue;
+
+            let cellValue = row[idx];
+            const headerName = rawHeaders[idx] || '';
+
+            const isDateCol = isDateColumnByName(headerName);
+            if (isDateCol && isText) {
+              const dateFilter = parseDateFilter(filterValue);
+              if (dateFilter) {
+                if (!dateMatchesFilter(cellValue, dateFilter)) { ok = false; break; }
+              } else {
+                const formattedCell = formatDateBR(cellValue);
+                if (!normalizeText(formattedCell).includes(normalizeText(filterValue))) { ok = false; break; }
+              }
+              continue;
+            }
+
+            if (cellValue instanceof Date) cellValue = cellValue.toLocaleDateString('pt-BR');
+
+            const isExact = isExactMatchColumn(headerName);
+            const isMunicipio = normalizeText(headerName).includes('municipio');
+
+            if (Array.isArray(filterValue)) {
+              const cellStr = String(cellValue || '').trim();
+              let cellToCompare = cellStr;
+              if (cellStr.includes('/')) cellToCompare = cellStr.split('/')[0].trim();
+              const norm = normalizeText(cellToCompare);
+              if (!filterValue.some(f => normalizeText(f) === norm)) { ok = false; break; }
+            } else if (isExact || isMunicipio) {
+              const cellStr = String(cellValue || '').trim();
+              const filterStr = String(filterValue).trim();
+              let cellToCompare = cellStr;
+              if (cellStr.includes('/')) cellToCompare = cellStr.split('/')[0].trim();
+              if (normalizeText(cellToCompare) !== normalizeText(filterStr)) { ok = false; break; }
+            } else {
+              if (!normalizeText(String(cellValue || '')).includes(normalizeText(String(filterValue)))) { ok = false; break; }
+            }
+          }
+
+          if (ok && hasCodSecFilter && codSecIdx !== -1) {
+            const val = normalizeText(String(row[codSecIdx] ?? ''));
+            if (!codSecFilterSet.has(val)) ok = false;
+          }
+
+          if (ok) result.push(row);
+        }
+        filteredRows = result;
+      }
+
+      if (sortState.colIndex !== -1) {
+        const colIndex = sortState.colIndex;
+        const headerName = rawHeaders[colIndex] || '';
+        const isNumeric = isNumericColumn(colIndex);
+        const isDateCol = isDateColumnByName(headerName);
+        const dir = sortState.asc ? 1 : -1;
+
+        filteredRows = [...filteredRows].sort((a, b) => {
+          let valA = a[colIndex] ?? '';
+          let valB = b[colIndex] ?? '';
+
+          if (isDateCol || (looksLikeISODate(valA) && looksLikeISODate(valB))) {
+            return compareDates(valA, valB) * dir;
+          }
+          if (isNumeric) {
+            return (extractNumericValue(valA) - extractNumericValue(valB)) * dir;
+          }
+          const sa = normalizeText(valA);
+          const sb = normalizeText(valB);
+          if (sa < sb) return -1 * dir;
+          if (sa > sb) return 1 * dir;
+          return 0;
+        });
+      }
+
+      selectedRows.clear();
+      updateFilterSummary(filteredRows);
+
+      _lastRangeStart = -1;
+      _lastRangeEnd = -1;
+      requestAnimationFrame(() => renderTable());
+
+      const t1 = performance.now();
+      const loadTimeEl = document.getElementById('load-time');
+      if (loadTimeEl) loadTimeEl.textContent = `⚡ Filtro/ordenação: ${(t1 - t0).toFixed(0)} ms`;
+
+      if (_ddState.activeColIdx !== null) {
+        _ddState.currentOptions = getUniqueValuesCascading(_ddState.activeColIdx);
+        const searchTerm = document.getElementById('filterDdSearch').value;
+        renderFilterDropdownList(searchTerm);
+      }
+    }
+
+    function clearAllFilters() {
+      closeFilterDropdown();
+      filterValues = {};
+      codSecFilterSet.clear();
+
+      document.querySelectorAll('.column-filter').forEach(input => {
+        input.value = '';
+        input.classList.remove('active', 'multi-active');
+      });
+      document.querySelectorAll('.filter-dropdown-btn').forEach(btn => btn.classList.remove('multi-active'));
+      document.getElementById('codsec-textarea').value = '';
+      document.getElementById('codsec-badge-count').style.display = 'none';
+      updateCodSecInfoBar(0, 0, 0);
+
+      _datalistCache = { signature: '', valuesByCol: {} };
+      renderHeader();
+      applyFilters();
+      applyColumnVisibility();
+      renderRelatorioCustom();
+
+      document.querySelectorAll('#column-checkboxes-container input[type="checkbox"]').forEach(cb => {
+        const idx = parseInt(cb.dataset.colIdx);
+        cb.checked = columnVisibility[idx];
+      });
+
+      showToast('✕ Filtros limpos. Colunas mantidas conforme sua seleção.', 'success');
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('report-tbody');
+      const total = filteredRows.length;
+      const headersLen = rawHeaders.length;
+
+      if (total === 0) {
+        tbody.innerHTML = `<tr><td colspan="${headersLen + 1}" style="text-align:center; padding:2rem;">Nenhum resultado encontrado.</td></tr>`;
+        updateHeaderCheckbox();
+        updateSelectionUI();
+        updateRenderStats(0, 0);
+        return;
+      }
+
+      if (!_virtualScrollBound) bindVirtualScroll();
+
+      const wrapper = document.getElementById('table-wrapper');
+      const scrollTop = wrapper.scrollTop;
+      const viewportHeight = wrapper.clientHeight;
+
+      const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
+      const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + BUFFER_ROWS * 2;
+      const end = Math.min(total, start + visibleCount);
+
+      if (start === _lastRangeStart && end === _lastRangeEnd && !_forceRender) return;
+      _lastRangeStart = start;
+      _lastRangeEnd = end;
+
+      const topSpacerHeight = start * ROW_HEIGHT;
+      const bottomSpacerHeight = (total - end) * ROW_HEIGHT;
+      const parts = [];
+
+      if (topSpacerHeight > 0) {
+        parts.push(`<tr class="virtual-spacer" style="height:${topSpacerHeight}px"><td colspan="${headersLen + 1}"></td></tr>`);
+      }
+
+      for (let i = start; i < end; i++) {
+        const row = filteredRows[i];
+        const isSelected = selectedRows.has(i);
+        const cls = isSelected ? ' class="selected-row"' : '';
+        parts.push(`<tr${cls} data-row-index="${i}">`);
+        parts.push(`<td class="checkbox-cell"><input type="checkbox" class="row-checkbox" data-row-index="${i}"${isSelected ? ' checked' : ''}></td>`);
+
+        for (let colIdx = 0; colIdx < headersLen; colIdx++) {
+          let val = row[colIdx];
+          const hiddenClass = columnVisibility[colIdx] ? '' : ' col-hidden';
+          const headerName = rawHeaders[colIdx] || '';
+          const isCurrency = isCurrencyColumn(colIdx);
+          const isDateCol = isDateColumnByName(headerName);
+          const isProc = isProcessoColumn(headerName);
+          const isWrap = isWrapColumn(headerName);
+
+          if (isDateCol && val !== null && val !== undefined && val !== '') val = formatDateBR(val);
+          else if (looksLikeISODate(val)) val = formatDateBR(val);
+          else if (isCurrency && val !== null && val !== undefined && val !== '') {
+            const numVal = extractNumericValue(val);
+            if (!isNaN(numVal) && numVal !== 0) val = formatCurrencyBR(numVal);
+          }
+
+          const value = (val !== null && val !== undefined) ? val : '';
+          const alignClass = isCurrency ? ' text-right' : '';
+          let cellExtraClass = '';
+          if (isProc) cellExtraClass = ' col-processo';
+          else if (isWrap) cellExtraClass = ' col-municipio';
+          parts.push(`<td class="col-idx-${colIdx}${hiddenClass}${alignClass}${cellExtraClass}">${value}</td>`);
+        }
+        parts.push('</tr>');
+      }
+
+      if (bottomSpacerHeight > 0) {
+        parts.push(`<tr class="virtual-spacer" style="height:${bottomSpacerHeight}px"><td colspan="${headersLen + 1}"></td></tr>`);
+      }
+
+      tbody.innerHTML = parts.join('');
+      updateHeaderCheckbox();
+      updateSelectionUI();
+      updateRenderStats(total, headersLen);
+      updateSortIndicators();
+    }
+
+    function updateRenderStats(total, cols) {
+      const el = document.getElementById('render-stats');
+      if (!el) return;
+      if (total === 0) { el.textContent = 'Nenhum registro'; return; }
+      const wrapper = document.getElementById('table-wrapper');
+      const visiveis = Math.min(total, Math.ceil((wrapper?.clientHeight || 600) / ROW_HEIGHT) + BUFFER_ROWS * 2);
+      el.textContent = `✅ ${total.toLocaleString('pt-BR')} registro(s) • ${cols} coluna(s) • ${visiveis} no DOM`;
+    }
+
+    function bindVirtualScroll() {
+      const wrapper = document.getElementById('table-wrapper');
+      if (!wrapper) return;
+      let ticking = false;
+      wrapper.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => { renderTable(); ticking = false; });
+      }, { passive: true });
+
+      let resizeTimer = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          _lastRangeStart = -1; _lastRangeEnd = -1;
+          renderTable();
+        }, 150);
+      }, { passive: true });
+
+      _virtualScrollBound = true;
+    }
+
+    function updateHeaderCheckbox() {
+      const headerCb = document.getElementById('header-select-all');
+      if (!headerCb) return;
+      const total = filteredRows.length;
+      if (total === 0) { headerCb.checked = false; headerCb.indeterminate = false; return; }
+      let allSelected = true, anySelected = false;
+      for (let i = 0; i < total; i++) {
+        if (selectedRows.has(i)) anySelected = true;
+        else { allSelected = false; if (anySelected) break; }
+      }
+      headerCb.checked = allSelected;
+      headerCb.indeterminate = anySelected && !allSelected;
+    }
+
+    function toggleSelectAllPage(checked) {
+      if (checked) {
+        for (let i = 0; i < filteredRows.length; i++) selectedRows.add(i);
+      } else selectedRows.clear();
+      document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = checked;
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.toggle('selected-row', checked);
+      });
+      updateSelectionUI();
+      updateFilterSummary(filteredRows);
+    }
+
+    function updateSelectionUI() {
+      const count = selectedRows.size;
+      const info = document.getElementById('selection-info');
+      const countEl = document.getElementById('selected-count');
+      if (count > 0) {
+        info.classList.add('active');
+        countEl.textContent = count;
+      } else info.classList.remove('active');
+    }
+
+    function clearSelection() {
+      selectedRows.clear();
+      document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = false;
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.remove('selected-row');
+      });
+      updateSelectionUI();
+      updateFilterSummary(filteredRows);
+      showToast('Seleção limpa.', 'success');
+    }
+
+    function updateSortIndicators() {
+      document.querySelectorAll('.sort-indicator').forEach(el => {
+        el.textContent = '';
+        el.className = 'sort-indicator';
+      });
+      if (sortState.colIndex === -1) return;
+      const indicator = document.getElementById(`sort-indicator-${sortState.colIndex}`);
+      if (indicator) {
+        indicator.textContent = sortState.asc ? ' ▲' : ' ▼';
+        indicator.className = `sort-indicator ${sortState.asc ? 'asc' : 'desc'}`;
+      }
+    }
+
+    function sortTable(colIndex) {
+      if (!isDataLoaded) return;
+      if (sortState.colIndex === colIndex) sortState.asc = !sortState.asc;
+      else { sortState.colIndex = colIndex; sortState.asc = true; }
+
+      updateSortIndicators();
+      applyFilters();
+    }
+
+    function measureTextWidth(text, font) {
+      if (!measureTextWidth._canvas) {
+        measureTextWidth._canvas = document.createElement('canvas');
+        measureTextWidth._ctx = measureTextWidth._canvas.getContext('2d');
+        measureTextWidth._cache = new Map();
+      }
+      const key = font + '|' + text;
+      const cache = measureTextWidth._cache;
+      if (cache.has(key)) return cache.get(key);
+      const ctx = measureTextWidth._ctx;
+      ctx.font = font;
+      const w = ctx.measureText(String(text ?? '')).width;
+      if (cache.size > 5000) cache.clear();
+      cache.set(key, w);
+      return w;
+    }
+
+    function getComputedFont(el) {
+      const style = window.getComputedStyle(el);
+      return `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    }
+
+    function autoFitColumn(th) {
+      const table = th.closest('table');
+      if (!table) return;
+
+      const headerRow = th.parentElement;
+      const colIndex = Array.from(headerRow.children).indexOf(th);
+
+      const MIN_WIDTH = 60;
+      const PADDING = 32;
+
+      const titleEl = th.querySelector('.column-title span:first-child') || th;
+      const headerFont = getComputedFont(titleEl);
+      const headerText = titleEl.textContent || '';
+      let maxWidth = measureTextWidth(headerText, headerFont);
+
+      const tbody = table.querySelector('tbody');
+      if (tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(tr => {
+          const cells = tr.children;
+          if (!cells || cells.length <= colIndex) return;
+
+          const cell = cells[colIndex];
+          if (cell.hasAttribute('colspan')) return;
+          if (cell.classList.contains('checkbox-cell')) return;
+          if (cell.classList.contains('vip-checkbox-cell')) return;
+
+          let cellText = '';
+          const input = cell.querySelector('input');
+          if (input) cellText = input.value || '';
+          else cellText = cell.textContent || '';
+
+          const font = getComputedFont(cell);
+          const w = measureTextWidth(cellText, font);
+          if (w > maxWidth) maxWidth = w;
+        });
+      }
+
+      const newWidth = Math.max(MIN_WIDTH, Math.ceil(maxWidth + PADDING));
+      th.style.width = `${newWidth}px`;
+      th.style.minWidth = `${newWidth}px`;
+      th.style.maxWidth = 'none';
+
+      if (tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(tr => {
+          const cell = tr.children[colIndex];
+          if (cell && !cell.hasAttribute('colspan')) cell.style.width = `${newWidth}px`;
+        });
+      }
+    }
+
+    function autoFitAllColumns() {
+      const table = document.getElementById('report-table');
+      if (!table) return;
+      const t0 = performance.now();
+      let ajustadas = 0;
+
+      table.querySelectorAll('thead th').forEach((th) => {
+        if (th.classList.contains('checkbox-col')) return;
+        let colIdx = -1;
+        th.classList.forEach(cls => {
+          const m = cls.match(/^col-idx-(\d+)$/);
+          if (m) colIdx = parseInt(m[1]);
+        });
+        if (colIdx === -1) return;
+        if (!columnVisibility[colIdx]) return;
+
+        autoFitColumn(th);
+        ajustadas++;
+      });
+
+      const t1 = performance.now();
+      if (ajustadas === 0) showToast('⚠️ Nenhuma coluna visível para ajustar.', 'error');
+      else showToast(`📏 ${ajustadas} coluna(s) auto-ajustada(s) em ${(t1 - t0).toFixed(0)} ms!`, 'success');
+    }
+
+    function makeColumnsResizable() {
+      document.querySelectorAll('.report-table .resizer, .csv-table .resizer').forEach(resizer => {
+        if (resizer.dataset.bound === '1') return;
+        resizer.dataset.bound = '1';
+
+        resizer.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const th = this.parentElement;
+          const startX = e.clientX;
+          const startWidth = th.offsetWidth;
+
+          const onMouseMove = function(e) {
+            const newWidth = startWidth + (e.clientX - startX);
+            if (newWidth > 50) {
+              th.style.width = newWidth + 'px';
+              th.style.minWidth = newWidth + 'px';
+              th.style.maxWidth = 'none';
+            }
+          };
+
+          const onMouseUp = function() {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        resizer.addEventListener('dblclick', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          autoFitColumn(this.parentElement);
+        });
+      });
+    }
+
+    function makeComprovanteResizable() {
+      document.querySelectorAll('#comprovante-table .resizer-vip').forEach(resizer => {
+        if (resizer.dataset.bound === '1') return;
+        resizer.dataset.bound = '1';
+
+        resizer.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const th = this.parentElement;
+          const startX = e.clientX;
+          const startWidth = th.offsetWidth;
+          resizer.classList.add('resizing-vip');
+
+          const onMouseMove = function(e) {
+            const newWidth = startWidth + (e.clientX - startX);
+            if (newWidth > 40) {
+              th.style.width = newWidth + 'px';
+              th.style.minWidth = newWidth + 'px';
+            }
+          };
+
+          const onMouseUp = function() {
+            resizer.classList.remove('resizing-vip');
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        resizer.addEventListener('dblclick', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          autoFitColumn(this.parentElement);
+        });
+      });
+    }
+
+    function getVisibleColumns() {
+      const visibleIndices = [];
+      const visibleHeaders = [];
+      columnVisibility.forEach((visible, idx) => {
+        if (visible) {
+          visibleIndices.push(idx);
+          visibleHeaders.push(rawHeaders[idx] || `Coluna ${idx + 1}`);
+        }
+      });
+      return { indices: visibleIndices, headers: visibleHeaders };
+    }
+
+    function exportToExcel() {
+      if (!isDataLoaded) { showToast('Não há dados para exportar!', 'error'); return; }
+
+      const temSelecao = selectedRows.size > 0;
+      const linhasParaExportar = temSelecao
+        ? Array.from(selectedRows).sort((a, b) => a - b).map(i => filteredRows[i]).filter(Boolean)
+        : filteredRows;
+
+      if (linhasParaExportar.length === 0) { showToast('Não há dados para exportar!', 'error'); return; }
+
+      try {
+        const { indices, headers } = getVisibleColumns();
+
+        const isMoneyCol = (name) => {
+          const n = normalizeText(name).toUpperCase();
+          return n.includes('VALOR ORIGINAL') || n.includes('VALORORIGINAL')
+            || n.includes('CUSTEIO') || n.includes('CAPITAL')
+            || (n.includes('VALOR') && !n.includes('LIMITE') && !n.includes('CT CJUSTO'));
+        };
+
+        const aoa = [headers];
+        const moneyCellRefs = [];
+
+        linhasParaExportar.forEach((row, rowIdx) => {
+          const line = indices.map((idx, colIdx) => {
+            let val = row[idx];
+            const headerName = rawHeaders[idx] || '';
+            const isDateCol = isDateColumnByName(headerName);
+
+            if (isDateCol && val !== null && val !== undefined && val !== '') return formatDateBR(val);
+            if (looksLikeISODate(val)) return formatDateBR(val);
+            if (val instanceof Date) return val.toLocaleDateString('pt-BR');
+
+            if (isMoneyCol(headerName)) {
+              const num = extractNumericValue(val);
+              moneyCellRefs.push({ r: rowIdx + 1, c: colIdx });
+              return num;
+            }
+
+            return val !== null && val !== undefined ? val : '';
+          });
+          aoa.push(line);
+        });
+
+        const totalsRow = indices.map((idx, colIdx) => {
+          const headerName = rawHeaders[idx] || '';
+          if (isMoneyCol(headerName)) {
+            let soma = 0;
+            for (let i = 0; i < linhasParaExportar.length; i++) soma += extractNumericValue(linhasParaExportar[i][idx]);
+            moneyCellRefs.push({ r: aoa.length, c: colIdx });
+            return soma;
+          }
+          return '';
+        });
+        const labelIdx = indices.findIndex(idx => !isMoneyCol(rawHeaders[idx] || ''));
+        if (labelIdx !== -1) totalsRow[labelIdx] = 'TOTAL GERAL';
+        aoa.push(totalsRow);
+
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        const colWidths = headers.map((h, i) => {
+          let maxLen = h.length;
+          aoa.slice(1).forEach(row => {
+            const val = String(row[i] ?? '');
+            if (val.length > maxLen) maxLen = val.length;
+          });
+          return { wch: Math.min(Math.max(maxLen + 2, 15), 40) };
+        });
+        ws['!cols'] = colWidths;
+
+        moneyCellRefs.forEach(({ r, c }) => {
+          const addr = XLSX.utils.encode_cell({ r, c });
+          if (!ws[addr]) ws[addr] = { t: 'n', v: 0 };
+          ws[addr].t = 'n';
+          ws[addr].z = '[$R$-416]#,##0.00';
+        });
+
+        const totalRowIdx = aoa.length - 1;
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const addr = XLSX.utils.encode_cell({ r: totalRowIdx, c: c });
+          if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+          ws[addr].s = {
+            font: { bold: true, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: '0D47A1' } },
+            alignment: { horizontal: 'center', vertical: 'center' }
+          };
+        }
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        saveAs(blob, `Relatorio_PNAE_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
+        showToast(`✅ ${linhasParaExportar.length} registro(s) exportado(s)!`, 'success');
+      } catch (err) {
+        showToast('Erro ao exportar Excel: ' + err.message, 'error');
+      }
+    }
+
+    function exportToPDF() {
+      if (!isDataLoaded) { showToast('Não há dados para exportar!', 'error'); return; }
+
+      const temSelecao = selectedRows.size > 0;
+      const linhasParaExportar = temSelecao
+        ? Array.from(selectedRows).sort((a, b) => a - b).map(i => filteredRows[i]).filter(Boolean)
+        : filteredRows;
+
+      if (linhasParaExportar.length === 0) { showToast('Não há dados para exportar!', 'error'); return; }
+
+      try {
+        const { indices, headers } = getVisibleColumns();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 10;
+        const usableWidth = pageWidth - margin * 2;
+
+        doc.setFontSize(14);
+        doc.setTextColor(13, 71, 161);
+        doc.setFont(undefined, 'bold');
+        doc.text('Relatório Gerador PNAE 2026', margin, 12);
+
+        doc.setFontSize(8);
+        doc.setTextColor(51, 51, 51);
+        doc.setFont(undefined, 'normal');
+        const y1Text = document.getElementById('cell-y1-value').textContent || 'N/A';
+        const somaCardText = document.getElementById('soma-valor-original').textContent || 'R$ 0,00';
+        const infoLinha = temSelecao
+          ? `Data: ${new Date().toLocaleString('pt-BR')} | Y1: ${y1Text} | Soma Selecionados: ${somaCardText} | Registros: ${linhasParaExportar.length}`
+          : `Data: ${new Date().toLocaleString('pt-BR')} | Y1: ${y1Text} | Soma: ${somaCardText} | Registros: ${linhasParaExportar.length}`;
+        doc.text(infoLinha, margin, 17);
+
+        const isMoneyCol = (name) => {
+          const n = normalizeText(name).toUpperCase();
+          return n.includes('VALOR ORIGINAL') || n.includes('VALORORIGINAL')
+            || n.includes('CUSTEIO') || n.includes('CAPITAL')
+            || (n.includes('VALOR') && !n.includes('LIMITE') && !n.includes('CT CJUSTO'));
+        };
+
+        const PDF_FONT_SIZE_PT = 5.5;
+        const PDF_FONT_BOLD = `bold ${PDF_FONT_SIZE_PT}pt "Helvetica"`;
+        const PDF_FONT_NORMAL = `normal ${PDF_FONT_SIZE_PT}pt "Helvetica"`;
+        const ptToMm = 0.352778;
+        const charPaddingMm = 1.6;
+        const minColMm = 8;
+
+        const visibleCols = [];
+        indices.forEach((idx) => {
+          const h = rawHeaders[idx] || `Coluna ${idx + 1}`;
+          let maxW = measureTextWidth(String(h), PDF_FONT_BOLD) * ptToMm;
+
+          linhasParaExportar.forEach(row => {
+            let val = row[idx] ?? '';
+            const hNorm = normalizeText(h);
+
+            if (isMoneyCol(h)) val = formatCurrencyBR(val);
+            else if (hNorm.includes('data') && val) val = formatDateBR(val);
+            else val = String(val);
+
+            const w = measureTextWidth(val, PDF_FONT_NORMAL) * ptToMm;
+            if (w > maxW) maxW = w;
+          });
+
+          let widthMM = maxW + charPaddingMm;
+          if (widthMM < minColMm) widthMM = minColMm;
+
+          visibleCols.push({ header: h, index: idx, widthMM: widthMM });
+        });
+
+        const sumIdeal = visibleCols.reduce((a, c) => a + c.widthMM, 0) || 1;
+        if (sumIdeal > usableWidth) {
+          const fator = usableWidth / sumIdeal;
+          visibleCols.forEach(c => { c.widthMM = c.widthMM * fator; });
+        } else if (sumIdeal < usableWidth) {
+          const sobra = usableWidth - sumIdeal;
+          visibleCols.forEach(c => { c.widthMM = c.widthMM + (c.widthMM / sumIdeal) * sobra; });
+        }
+
+        const totals = {};
+        const bodyData = linhasParaExportar.map(row => {
+          return visibleCols.map(col => {
+            let val = row[col.index] ?? '';
+            const headerName = rawHeaders[col.index] || '';
+            const isDateCol = isDateColumnByName(headerName);
+
+            if (isDateCol && val !== null && val !== undefined && val !== '') return formatDateBR(val);
+            if (looksLikeISODate(val)) return formatDateBR(val);
+
+            if (isMoneyCol(headerName)) {
+              const num = extractNumericValue(val);
+              totals[col.index] = (totals[col.index] || 0) + num;
+              return formatCurrencyBR(num);
+            }
+            return String(val ?? '');
+          });
+        });
+
+        const columnStyles = {};
+        visibleCols.forEach((c, i) => { columnStyles[i] = { cellWidth: c.widthMM, overflow: 'linebreak' }; });
+
+        doc.autoTable({
+          startY: 22,
+          head: [visibleCols.map(c => c.header)],
+          body: bodyData,
+          styles: {
+            fontSize: 5.5,
+            cellPadding: { top: 1.2, bottom: 1.2, left: 1, right: 1 },
+            overflow: 'linebreak', valign: 'middle', minCellHeight: 5.5,
+            lineColor: [203, 213, 225], lineWidth: 0.1, textColor: [0, 0, 0]
+          },
+          headStyles: {
+            fillColor: [13, 71, 161], textColor: [255, 255, 255],
+            fontSize: 5.8, fontStyle: 'bold', halign: 'center', valign: 'middle', minCellHeight: 7
+          },
+          alternateRowStyles: { fillColor: [240, 245, 251] },
+          columnStyles: columnStyles,
+          margin: { top: 22, left: margin, right: margin, bottom: 15 },
+          tableWidth: usableWidth,
+          pageBreak: 'auto', rowPageBreak: 'avoid',
+          didParseCell: function (data) {
+            if (data.section === 'head') return;
+            const colName = visibleCols[data.column.index]?.header || '';
+            if (isMoneyCol(colName)) data.cell.styles.halign = 'right';
+            else {
+              const n = normalizeText(colName);
+              if (n.includes('nte') || n.includes('cod') || n.includes('remessa')) data.cell.styles.halign = 'center';
+            }
+          }
+        });
+
+        const finalY = doc.lastAutoTable.finalY;
+        const rowHeightTotal = 7;
+        let yTotal = finalY;
+        if (yTotal + rowHeightTotal > pageHeight - 10) { doc.addPage(); yTotal = 20; }
+
+        doc.setFillColor(13, 71, 161);
+        doc.rect(margin, yTotal, usableWidth, rowHeightTotal, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(6);
+        doc.setFont(undefined, 'bold');
+        doc.text('TOTAL GERAL', margin + 1.5, yTotal + rowHeightTotal / 2 + 1);
+
+        let xCursor = margin;
+        visibleCols.forEach((col) => {
+          if (isMoneyCol(col.header)) {
+            doc.text(formatCurrencyBR(totals[col.index] || 0), xCursor + col.widthMM - 1.5, yTotal + rowHeightTotal / 2 + 1, { align: 'right' });
+          }
+          xCursor += col.widthMM;
+        });
+
+        doc.setDrawColor(13, 71, 161);
+        doc.setLineWidth(0.3);
+        doc.rect(margin, yTotal, usableWidth, rowHeightTotal);
+
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let p = 1; p <= pageCount; p++) {
+          doc.setPage(p);
+          doc.setFontSize(7);
+          doc.setTextColor(100);
+          doc.text(`Página ${p} de ${pageCount}`, pageWidth - 20, pageHeight - 5);
+          doc.setTextColor(0);
+        }
+
+        openPdfPreview(doc, linhasParaExportar.length, visibleCols.length);
+      } catch (err) {
+        showToast('Erro ao exportar PDF: ' + err.message, 'error');
+      }
+    }
+
+    let _pdfPreviewBlobUrl = null;
+    let _pdfPreviewDoc = null;
+
+    function openPdfPreview(doc, totalRegistros, totalColunas) {
+      _pdfPreviewDoc = doc;
+      if (_pdfPreviewBlobUrl) {
+        try { URL.revokeObjectURL(_pdfPreviewBlobUrl); } catch (e) {}
+        _pdfPreviewBlobUrl = null;
+      }
+      _pdfPreviewBlobUrl = doc.output('bloburl');
+      document.getElementById('pdf-preview-iframe').src = _pdfPreviewBlobUrl;
+      document.getElementById('pdf-preview-info').textContent =
+        `${totalRegistros.toLocaleString('pt-BR')} registro(s) • ${totalColunas} coluna(s) • ${doc.internal.getNumberOfPages()} página(s)`;
+      document.getElementById('pdf-preview-overlay').classList.add('active');
+    }
+
+    function closePdfPreview() {
+      document.getElementById('pdf-preview-overlay').classList.remove('active');
+      document.getElementById('pdf-preview-iframe').src = 'about:blank';
+      if (_pdfPreviewBlobUrl) {
+        const url = _pdfPreviewBlobUrl;
+        _pdfPreviewBlobUrl = null;
+        setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) {} }, 500);
+      }
+      _pdfPreviewDoc = null;
+    }
+
+    function savePdfFromPreview() {
+      if (!_pdfPreviewDoc) { showToast('Nenhum PDF para salvar.', 'error'); return; }
+      _pdfPreviewDoc.save(`Relatorio_PNAE_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+      showToast('✅ PDF salvo no computador!', 'success');
+    }
+
+    function printPdfFromPreview() {
+      if (!_pdfPreviewBlobUrl) { showToast('Nenhum PDF para imprimir.', 'error'); return; }
+      const win = window.open(_pdfPreviewBlobUrl, '_blank');
+      if (!win) { showToast('⚠️ Permita pop-ups para imprimir o PDF.', 'error'); return; }
+      win.addEventListener('load', () => { setTimeout(() => { try { win.print(); } catch (e) {} }, 300); });
+    }
+
+    function setupPdfPreviewListeners() {
+      document.getElementById('btn-preview-close').addEventListener('click', closePdfPreview);
+      document.getElementById('btn-preview-save').addEventListener('click', savePdfFromPreview);
+      document.getElementById('btn-preview-print').addEventListener('click', printPdfFromPreview);
+      document.getElementById('pdf-preview-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'pdf-preview-overlay') closePdfPreview();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('pdf-preview-overlay').classList.contains('active')) closePdfPreview();
+      });
+    }
+
+    function setupCsvListeners() {
+      document.getElementById('btn-clear-csv').addEventListener('click', clearCsvData);
+      document.getElementById('btn-export-csv').addEventListener('click', exportXlsxFile);
+      document.getElementById('btn-apply-bulk').addEventListener('click', applyBulkParcela);
+    }
+
+    function populateBulkParcela() {
+      const select = document.getElementById('bulk-parcela');
+      const parts = [];
+      PARCELAS_LIST.forEach(p => { parts.push(`<option value="${p}">${p}</option>`); });
+      select.innerHTML = parts.join('');
+    }
+
+    function applyBulkParcela() {
+      if (csvData.length === 0) { showToast('Nenhum registro na tabela para aplicar!', 'error'); return; }
+      const parcela = document.getElementById('bulk-parcela').value;
+      for (let i = 0; i < csvData.length; i++) csvData[i]['Parcela'] = parcela;
+      renderCsvTable();
+      showToast(`✅ Parcela ${parcela} aplicada a ${csvData.length} registros!`, 'success');
+    }
+
+    function createParcelaSelect(valor) {
+      let options = '';
+      PARCELAS_LIST.forEach(p => {
+        options += `<option value="${p}" ${p === valor ? 'selected' : ''}>${p}</option>`;
+      });
+      return `<select class="csv-parcela-select">${options}</select>`;
+    }
+
+    function renderCsvHeader() {
+      const tr = document.getElementById('csv-thead-tr');
+      const parts = [];
+      CSV_COLUMNS_KEYS.forEach(colName => {
+        parts.push(`<th style="width:120px;">${colName}<div class="resizer"></div></th>`);
+      });
+      tr.innerHTML = parts.join('');
+      setTimeout(makeColumnsResizable, 30);
+    }
+
+    function findColIdxTolerant(keywords) {
+      const cacheKey = keywords.join('|').toLowerCase();
+      if (_colIdxCache[cacheKey] !== undefined) return _colIdxCache[cacheKey];
+
+      let idx = rawHeaders.findIndex(h => {
+        const hNorm = normalizeText(h);
+        return keywords.some(kw => hNorm === normalizeText(kw));
+      });
+      if (idx === -1) {
+        idx = rawHeaders.findIndex(h => {
+          const hNorm = normalizeText(h);
+          return keywords.some(kw => hNorm.includes(normalizeText(kw)));
+        });
+      }
+      if (idx === -1) {
+        idx = rawHeaders.findIndex(h => {
+          const hNorm = normalizeText(h);
+          return keywords.some(kw => normalizeText(kw).includes(hNorm));
+        });
+      }
+      _colIdxCache[cacheKey] = idx;
+      return idx;
+    }
+
+    function findColIdx(keywords) { return findColIdxTolerant(keywords); }
+
+    function addToCsv(onlySelected) {
+      let rowsToAdd;
+
+      if (onlySelected) {
+        if (selectedRows.size === 0) { showToast('⚠️ Nenhum registro selecionado!', 'error'); return; }
+        const indices = Array.from(selectedRows).sort((a, b) => a - b);
+        rowsToAdd = indices.map(i => filteredRows[i]).filter(r => r);
+      } else {
+        if (selectedRows.size > 0) {
+          const indices = Array.from(selectedRows).sort((a, b) => a - b);
+          rowsToAdd = indices.map(i => filteredRows[i]).filter(r => r);
+        } else {
+          rowsToAdd = filteredRows;
+        }
+      }
+
+      if (!rowsToAdd || rowsToAdd.length === 0) { showToast('Nenhum dado para adicionar!', 'error'); return; }
+
+      const idxCodSec = findColIdxTolerant([
+        'cod sec', 'codigo sec', 'cod. sec', 'codsec', 'código sec',
+        'codigo da sec', 'cod.sec', 'codigo da secretaria', 'cod sec.', 'codsecretaria'
+      ]);
+      const idxDataRec = findColIdxTolerant([
+        'data do recebimento', 'data recebimento', 'recebimento', 'data', 'dt recebimento'
+      ]);
+      const idxFinalidade = findColIdxTolerant(['finalidade', 'finalid']);
+      const idxRemessa = findColIdxTolerant(['remessa', 'remes']);
+      const idxProcesso = findColIdxTolerant(['processo sei', 'processo', 'proc sei', 'n processo']);
+      const idxValorOriginal = originalValueColumnIndex !== -1
+        ? originalValueColumnIndex
+        : (valueColumnIndex !== -1 ? valueColumnIndex : -1);
+
+      let addedCount = 0;
+
+      for (let k = 0; k < rowsToAdd.length; k++) {
+        const row = rowsToAdd[k];
+        let valorOriginal = idxValorOriginal !== -1 ? extractNumericValue(row[idxValorOriginal]) : 0;
+        let finalidadeValor = idxFinalidade !== -1 ? (row[idxFinalidade] ?? '') : '';
+
+        csvData.push({
+          'CNPJ': '', 'INEP': '',
+          'codigo sec': idxCodSec !== -1 ? (row[idxCodSec] ?? '') : '',
+          'Banco': '001', 'agencia': '38326', 'Conta': '71676',
+          'Data do Recebimento': idxDataRec !== -1 ? formatDateBR(row[idxDataRec]) : '',
+          'Parcela': '0',
+          'Valor de Custeio': formatNumberBR(valorOriginal),
+          'Valor de Capital': formatNumberBR(0),
+          'observação': finalidadeValor,
+          'acao': ACAO_FIXA,
+          'finalidade': '',
+          'remessa': idxRemessa !== -1 ? (row[idxRemessa] ?? '') : '',
+          'processo sei': idxProcesso !== -1 ? (row[idxProcesso] ?? '') : ''
+        });
+        addedCount++;
+      }
+
+      selectedRows.clear();
+      document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = false;
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.remove('selected-row');
+      });
+      updateSelectionUI();
+      updateFilterSummary(filteredRows);
+      renderCsvTable();
+
+      if (addedCount > 0) showToast(`✅ ${addedCount} registro(s) adicionado(s) ao CSV!`, 'success');
+      else showToast('⚠️ Nenhum registro pôde ser adicionado.', 'error');
+    }
+
+    function renderCsvTable() {
+      renderCsvHeader();
+      const tbody = document.getElementById('csv-tbody');
+      document.getElementById('csv-total-records').textContent = `${csvData.length} registros`;
+
+      if (csvData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="15" style="text-align: center; padding: 2rem;">Nenhum registro adicionado.</td></tr>`;
+        return;
+      }
+
+      const parts = [];
+      for (let i = 0; i < csvData.length; i++) {
+        const row = csvData[i];
+        parts.push('<tr>');
+        for (let k = 0; k < CSV_COLUMNS_KEYS.length; k++) {
+          const key = CSV_COLUMNS_KEYS[k];
+          if (key === 'Parcela') parts.push(`<td>${createParcelaSelect(row[key])}</td>`);
+          else parts.push(`<td>${row[key] ?? ''}</td>`);
+        }
+        parts.push('</tr>');
+      }
+      tbody.innerHTML = parts.join('');
+
+      tbody.onchange = (e) => {
+        if (e.target.classList.contains('csv-parcela-select')) {
+          const tr = e.target.closest('tr');
+          if (!tr) return;
+          const idx = Array.from(tbody.children).indexOf(tr);
+          if (csvData[idx]) csvData[idx]['Parcela'] = e.target.value;
+        }
+      };
+    }
+
+    function clearCsvData() {
+      if (confirm('Deseja realmente limpar toda a tabela CSV?')) {
+        csvData = [];
+        renderCsvTable();
+        showToast('Tabela CSV limpa.', 'success');
+      }
+    }
+
+    function exportXlsxFile() {
+      if (csvData.length === 0) { showToast('Não há registros para exportar!', 'error'); return; }
+
+      try {
+        const aoa = [];
+        aoa.push(CSV_COLUMNS_KEYS);
+
+        csvData.forEach(row => {
+          const line = CSV_COLUMNS_KEYS.map(key => {
+            let val = row[key] ?? '';
+
+            if (key === 'Banco') return '001';
+            if (key === 'agencia') return '38326';
+            if (key === 'Conta') return '71676';
+
+            if (key === 'Valor de Custeio') {
+              return extractNumericValue(val);
+            }
+
+            if (key === 'Valor de Capital') {
+              return 0;
+            }
+
+            return String(val);
+          });
+          aoa.push(line);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        const colWidths = CSV_COLUMNS_KEYS.map((key, pos) => {
+          let maxLen = String(key).length;
+          aoa.slice(1).forEach(r => {
+            const v = String(r[pos] ?? '');
+            if (v.length > maxLen) maxLen = v.length;
+          });
+          return { wch: Math.min(Math.max(maxLen + 2, 12), 40) };
+        });
+        ws['!cols'] = colWidths;
+
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let r = 1; r <= range.e.r; r++) {
+          // Coluna D (índice 3) = Banco → TEXTO "001"
+          const addrBanco = XLSX.utils.encode_cell({ r, c: 3 });
+          if (ws[addrBanco]) {
+            ws[addrBanco].t = 's';
+            ws[addrBanco].v = '001';
+          }
+
+          // Coluna I (índice 8) = Valor de Custeio → número + formato brasileiro #.##0,00 (sem R$)
+          const addrCusteio = XLSX.utils.encode_cell({ r, c: 8 });
+          if (ws[addrCusteio]) {
+            const num = extractNumericValue(ws[addrCusteio].v);
+            ws[addrCusteio].t = 'n';
+            ws[addrCusteio].v = num;
+            ws[addrCusteio].z = '#,##0.00';
+          }
+
+          // Coluna J (índice 9) = Valor de Capital → SEMPRE 0 com formato brasileiro
+          const addrCapital = XLSX.utils.encode_cell({ r, c: 9 });
+          if (ws[addrCapital]) {
+            ws[addrCapital].t = 'n';
+            ws[addrCapital].v = 0;
+            ws[addrCapital].z = '#,##0.00';
+          }
+        }
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'CSV_PNAE');
+
+        const fileName = `PNAE_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        showToast(`✅ ${csvData.length} registros exportados como XLSX!`, 'success');
+      } catch (err) {
+        showToast('Erro ao exportar XLSX: ' + err.message, 'error');
+      }
+    }
+
+    function setupComprovanteListeners() {
+      document.getElementById('btn-clear-comprovante').addEventListener('click', clearComprovanteTable);
+      document.getElementById('btn-export-comprovante-pdf').addEventListener('click', exportComprovantePDF);
+      document.getElementById('btn-export-comprovante-excel').addEventListener('click', exportComprovanteExcel);
+      document.getElementById('btn-print-comprovante').addEventListener('click', () => {
+        if (comprovanteData.length === 0) { showToast('Nenhum registro no comprovante para imprimir!', 'error'); return; }
+        window.print();
+      });
+
+      document.getElementById('btn-apply-vip-processo').addEventListener('click', () => {
+        const val = document.getElementById('vip-bulk-processo').value.trim();
+        applyBulkProcessoVip(val);
+      });
+      document.getElementById('btn-apply-vip-empty').addEventListener('click', () => {
+        applyBulkProcessoVip('');
+      });
+
+      document.getElementById('btn-vip-select-all').addEventListener('click', vipSelectAll);
+      document.getElementById('btn-vip-clear-selection').addEventListener('click', vipClearSelection);
+      document.getElementById('btn-vip-remove-selected').addEventListener('click', vipRemoveSelected);
+    }
+
+    function setupVipSortListeners() {
+      document.querySelectorAll('#comprovante-table thead th.sortable-vip').forEach(th => {
+        th.addEventListener('click', (e) => {
+          if (e.target.classList.contains('resizer-vip')) return;
+          const key = th.dataset.sortKey;
+          if (!key) return;
+          sortVipByColumn(key);
+        });
+      });
+    }
+
+    function sortVipByColumn(key) {
+      if (vipSort.key === key) vipSort.direction = vipSort.direction === 'asc' ? 'desc' : 'asc';
+      else { vipSort.key = key; vipSort.direction = 'asc'; }
+
+      const isNumeric = (key === 'valor' || key === 'nte' || key === 'codSec' || key === 'cartao' || key === 'processoSei');
+
+      comprovanteData.sort((a, b) => {
+        let valA = a[key];
+        let valB = b[key];
+        if (valA === null || valA === undefined) valA = '';
+        if (valB === null || valB === undefined) valB = '';
+
+        if (isNumeric) {
+          const numA = extractNumericValue(valA);
+          const numB = extractNumericValue(valB);
+          return vipSort.direction === 'asc' ? numA - numB : numB - numA;
+        } else {
+          const strA = normalizeText(String(valA));
+          const strB = normalizeText(String(valB));
+          if (strA < strB) return vipSort.direction === 'asc' ? -1 : 1;
+          if (strA > strB) return vipSort.direction === 'asc' ? 1 : -1;
+          return 0;
+        }
+      });
+
+      vipSelectedRows.clear();
+      _vipLastRangeStart = -1;
+      _vipLastRangeEnd = -1;
+      renderComprovante();
+      updateVipSortIcons();
+      showToast(`↕ Ordenado por "${getVipColLabel(key)}"`, 'success');
+    }
+
+    function getVipColLabel(key) {
+      const labels = {
+        processoSei: 'Processo SEI', nte: 'NTE', municipio: 'Município',
+        codSec: 'Código SEC', escola: 'Unidade Escolar', cartao: 'Nº do cartão', valor: 'Valor limite'
+      };
+      return labels[key] || key;
+    }
+
+    function updateVipSortIcons() {
+      document.querySelectorAll('#comprovante-table thead th.sortable-vip').forEach(th => {
+        const key = th.dataset.sortKey;
+        const icon = th.querySelector('.sort-icon-vip');
+        if (!icon) return;
+        th.classList.remove('sort-active-vip');
+        if (vipSort.key === key) {
+          th.classList.add('sort-active-vip');
+          icon.textContent = vipSort.direction === 'asc' ? '▲' : '▼';
+        } else icon.textContent = '↕';
+      });
+    }
+
+    function addToComprovante(onlySelected) {
+      let rowsToAdd;
+
+      if (onlySelected) {
+        if (selectedRows.size === 0) { showToast('⚠️ Nenhum registro selecionado!', 'error'); return; }
+        const indices = Array.from(selectedRows).sort((a, b) => a - b);
+        rowsToAdd = indices.map(i => filteredRows[i]).filter(r => r);
+      } else {
+        if (selectedRows.size > 0) {
+          const indices = Array.from(selectedRows).sort((a, b) => a - b);
+          rowsToAdd = indices.map(i => filteredRows[i]).filter(r => r);
+        } else {
+          rowsToAdd = filteredRows;
+        }
+      }
+
+      if (rowsToAdd.length === 0) { showToast('Nenhum dado para adicionar!', 'error'); return; }
+
+      const idxNTE = findColIdxTolerant(['nte']);
+      const idxMunicipio = findColIdxTolerant(['municipio', 'município', 'cid', 'cidade']);
+      const idxCodSec = findColIdxTolerant([
+        'cod sec', 'codigo sec', 'cod. sec', 'codsec',
+        'código sec', 'codigo da sec', 'cod.sec', 'cod sec', 'codigo da sec'
+      ]);
+      const idxEscola = findColIdxTolerant(['unidade escolar', 'escola', 'unidade']);
+      const idxCartao = findColIdxTolerant(['cartao', 'cartão', 'n cartao', 'n. cartao', 'numero cartao']);
+      const idxValor = originalValueColumnIndex !== -1 ? originalValueColumnIndex : valueColumnIndex;
+      const idxRemessa = findColIdxTolerant(['remessa']);
+      const idxData = findColIdxTolerant(['data do recebimento', 'data recebimento', 'recebimento', 'data']);
+      const idxProcesso = findColIdxTolerant(['processo sei', 'processo']);
+
+      if (idxCodSec === -1) {
+        showToast('⚠️ Coluna "Cod SEC" não localizada nos dados! Verifique o console (F12).', 'error');
+      }
+
+      if (rowsToAdd.length > 0) {
+        const firstRow = rowsToAdd[0];
+        if (idxRemessa !== -1 && firstRow[idxRemessa]) comprovanteInfo.remessa = firstRow[idxRemessa];
+        if (idxData !== -1 && firstRow[idxData]) comprovanteInfo.data = formatDateBR(firstRow[idxData]);
+        else if (!comprovanteInfo.data) comprovanteInfo.data = formatDateBR(new Date());
+      }
+
+      const grupos = new Map();
+
+      for (let k = 0; k < rowsToAdd.length; k++) {
+        const row = rowsToAdd[k];
+        const codSecRaw = idxCodSec !== -1 ? String(row[idxCodSec] ?? '').trim() : '';
+        const chave = normalizeText(codSecRaw) || `__sem_codsec_${k}`;
+        const valorLinha = idxValor !== -1 ? extractNumericValue(row[idxValor]) : 0;
+
+        const existente = grupos.get(chave);
+        if (existente) {
+          existente.valor += valorLinha;
+          existente._linhasOriginais++;
+        } else {
+          grupos.set(chave, {
+            processoSei: idxProcesso !== -1 ? (row[idxProcesso] ?? 'USAR SALDO') : 'USAR SALDO',
+            nte: idxNTE !== -1 ? (row[idxNTE] ?? '') : '',
+            municipio: idxMunicipio !== -1 ? (row[idxMunicipio] ?? '') : '',
+            codSec: codSecRaw,
+            escola: idxEscola !== -1 ? (row[idxEscola] ?? '') : '',
+            cartao: idxCartao !== -1 ? (row[idxCartao] ?? '') : '',
+            valor: valorLinha,
+            _linhasOriginais: 1
+          });
+        }
+      }
+
+      const agrupados = Array.from(grupos.values());
+      const totalLinhas = rowsToAdd.length;
+      const totalGrupos = agrupados.length;
+
+      agrupados.forEach(item => {
+        delete item._linhasOriginais;
+        comprovanteData.push(item);
+      });
+
+      selectedRows.clear();
+      vipSelectedRows.clear();
+      document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = false;
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.remove('selected-row');
+      });
+      updateSelectionUI();
+      updateFilterSummary(filteredRows);
+
+      _vipLastRangeStart = -1;
+      _vipLastRangeEnd = -1;
+      renderComprovante();
+      switchTab('comprovante');
+
+      showToast(`✅ ${totalLinhas} registro(s) agrupados em ${totalGrupos} linha(s) no Comprovante VIP!`, 'success');
+    }
+
+    function renderComprovante() {
+      const tbody = document.getElementById('comprovante-tbody');
+      const total = comprovanteData.length;
+      document.getElementById('comprovante-total-records').textContent = `${total} registros no comprovante`;
+
+      document.getElementById('comprovante-cliente').value = comprovanteInfo.cliente;
+      document.getElementById('comprovante-remessa').value = comprovanteInfo.remessa;
+      document.getElementById('comprovante-data').value = comprovanteInfo.data;
+
+      if (total === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem;">Nenhum registro adicionado. Filtre a aba "Relatório" pela remessa desejada e clique em "Adicionar Selecionados ao VIP".</td></tr>`;
+        updateVipSelectionUI();
+        updateVipHeaderCheckbox();
+        return;
+      }
+
+      if (!_vipVirtualScrollBound) bindVipVirtualScroll();
+
+      const wrapper = document.getElementById('comprovante-table-wrapper');
+      const scrollTop = wrapper.scrollTop;
+      const viewportHeight = wrapper.clientHeight;
+
+      const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
+      const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + BUFFER_ROWS * 2;
+      const end = Math.min(total, start + visibleCount);
+
+      const topSpacerHeight = start * ROW_HEIGHT;
+      const bottomSpacerHeight = (total - end) * ROW_HEIGHT;
+
+      let totalValor = 0;
+      for (let i = 0; i < total; i++) totalValor += extractNumericValue(comprovanteData[i].valor);
+
+      const parts = [];
+      if (topSpacerHeight > 0) {
+        parts.push(`<tr class="virtual-spacer" style="height:${topSpacerHeight}px"><td colspan="9"></td></tr>`);
+      }
+
+      for (let i = start; i < end; i++) {
+        const row = comprovanteData[i];
+        const valNum = extractNumericValue(row.valor);
+        const isSelected = vipSelectedRows.has(i);
+
+        parts.push(`<tr class="${isSelected ? 'selected-row' : ''}">`);
+        parts.push(`<td class="vip-checkbox-cell no-print"><input type="checkbox" class="vip-row-checkbox" data-vip-idx="${i}" ${isSelected ? 'checked' : ''}></td>`);
+        parts.push(`<td class="col-processo"><input type="text" class="comprovante-processo-input" value="${row.processoSei || ''}" data-idx="${i}"></td>`);
+        parts.push(`<td>${row.nte || ''}</td>`);
+        parts.push(`<td class="col-municipio">${row.municipio || ''}</td>`);
+        parts.push(`<td>${row.codSec || ''}</td>`);
+        parts.push(`<td class="col-escola">${row.escola || ''}</td>`);
+        parts.push(`<td>${row.cartao || ''}</td>`);
+        parts.push(`<td class="col-valor">${formatNumberBR(valNum)}</td>`);
+        parts.push(`<td class="no-print" style="text-align:center;"><button type="button" class="btn-remove-row" data-idx="${i}" title="Remover linha">✕</button></td>`);
+        parts.push('</tr>');
+      }
+
+      if (bottomSpacerHeight > 0) {
+        parts.push(`<tr class="virtual-spacer" style="height:${bottomSpacerHeight}px"><td colspan="9"></td></tr>`);
+      }
+
+      parts.push(`<tr class="comprovante-total-row">`);
+      parts.push(`<td class="no-print"></td>`);
+      parts.push(`<td colspan="6" style="text-align:right;">TOTAL GERAL</td>`);
+      parts.push(`<td class="col-valor">${formatNumberBR(totalValor)}</td>`);
+      parts.push(`<td class="no-print"></td>`);
+      parts.push(`</tr>`);
+
+      tbody.innerHTML = parts.join('');
+
+      updateVipSelectionUI();
+      updateVipHeaderCheckbox();
+      setTimeout(makeComprovanteResizable, 30);
+    }
+
+    function bindVipVirtualScroll() {
+      const wrapper = document.getElementById('comprovante-table-wrapper');
+      if (!wrapper) return;
+      let ticking = false;
+      wrapper.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => { renderComprovante(); ticking = false; });
+      }, { passive: true });
+
+      _vipVirtualScrollBound = true;
+    }
+
+    function vipSelectAll() {
+      if (comprovanteData.length === 0) { showToast('Nenhum registro no comprovante.', 'error'); return; }
+      vipSelectedRows.clear();
+      comprovanteData.forEach((_, idx) => vipSelectedRows.add(idx));
+      document.querySelectorAll('.vip-row-checkbox').forEach(cb => {
+        cb.checked = true;
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.add('selected-row');
+      });
+      updateVipSelectionUI();
+      updateVipHeaderCheckbox();
+      showToast(`✅ ${comprovanteData.length} registro(s) selecionado(s)!`, 'success');
+    }
+
+    function vipClearSelection() {
+      vipSelectedRows.clear();
+      document.querySelectorAll('.vip-row-checkbox').forEach(cb => {
+        cb.checked = false;
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.remove('selected-row');
+      });
+      updateVipSelectionUI();
+      updateVipHeaderCheckbox();
+      showToast('Seleção limpa.', 'success');
+    }
+
+    function vipRemoveSelected() {
+      if (vipSelectedRows.size === 0) { showToast('Nenhum registro selecionado.', 'error'); return; }
+      const qtd = vipSelectedRows.size;
+      if (!confirm(`Deseja realmente remover ${qtd} registro(s) do comprovante?`)) return;
+
+      const indices = Array.from(vipSelectedRows).sort((a, b) => b - a);
+      indices.forEach(idx => comprovanteData.splice(idx, 1));
+
+      vipSelectedRows.clear();
+      _vipLastRangeStart = -1;
+      _vipLastRangeEnd = -1;
+      renderComprovante();
+      showToast(`🗑️ ${qtd} registro(s) removido(s)!`, 'success');
+    }
+
+    function updateVipSelectionUI() {
+      const count = vipSelectedRows.size;
+      const info = document.getElementById('vip-selection-info');
+      const countEl = document.getElementById('vip-selected-count');
+      if (count > 0) {
+        info.classList.add('active');
+        countEl.textContent = count;
+      } else info.classList.remove('active');
+    }
+
+    function updateVipHeaderCheckbox() {
+      const headerCb = document.getElementById('vip-header-select-all');
+      if (!headerCb) return;
+      if (comprovanteData.length === 0) { headerCb.checked = false; headerCb.indeterminate = false; return; }
+      let allSelected = true, anySelected = false;
+      for (let i = 0; i < comprovanteData.length; i++) {
+        if (vipSelectedRows.has(i)) anySelected = true;
+        else allSelected = false;
+      }
+      headerCb.checked = allSelected;
+      headerCb.indeterminate = anySelected && !allSelected;
+    }
+
+    function applyBulkProcessoVip(valor) {
+      if (comprovanteData.length === 0) { showToast('Nenhum registro no comprovante para aplicar!', 'error'); return; }
+      for (let i = 0; i < comprovanteData.length; i++) comprovanteData[i].processoSei = valor;
+      document.querySelectorAll('.comprovante-processo-input').forEach(input => { input.value = valor; });
+      if (valor === '') showToast(`🧹 Coluna "Processo SEI" esvaziada em ${comprovanteData.length} linha(s)!`, 'success');
+      else showToast(`✅ Valor "${valor}" aplicado a ${comprovanteData.length} linha(s)!`, 'success');
+    }
+
+    function clearComprovanteTable() {
+      if (confirm('Deseja realmente limpar o Comprovante VIP?')) {
+        comprovanteData = [];
+        comprovanteInfo.remessa = '';
+        comprovanteInfo.data = '';
+        vipSort = { key: null, direction: 'asc' };
+        vipSelectedRows.clear();
+        _vipLastRangeStart = -1;
+        _vipLastRangeEnd = -1;
+        renderComprovante();
+        showToast('Comprovante VIP limpo.', 'success');
+      }
+    }
+
+    function getComprovanteTotal() {
+      let sum = 0;
+      for (let i = 0; i < comprovanteData.length; i++) sum += extractNumericValue(comprovanteData[i].valor);
+      return sum;
+    }
+
+    function getVipFileName(ext) {
+      const dataSistema = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      const remessaNome = (comprovanteInfo.remessa || 'sem-remessa').toString().replace(/[\\/:*?"<>|]/g, '-');
+      return `Comprovante_VIP_${remessaNome}_${dataSistema}.${ext}`;
+    }
+
+    function exportComprovantePDF() {
+      if (comprovanteData.length === 0) { showToast('Nenhum registro no comprovante para exportar!', 'error'); return; }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('l', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const usableWidth = pageWidth - margin * 2;
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(91, 33, 182);
+      doc.text(`Cliente: ${comprovanteInfo.cliente}`, margin, 12);
+
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Remessa: ${comprovanteInfo.remessa}  |  Data: ${comprovanteInfo.data}`, margin, 18);
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Comprovante de Liberação de Limite – Cartão PNAE', margin, 25);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(0);
+      doc.text('Arquivos Formato VIP636', margin, 30);
+
+      const body = comprovanteData.map(item => [
+        item.processoSei, item.nte, item.municipio, item.codSec, item.escola, item.cartao, formatNumberBR(item.valor)
+      ]);
+      body.push([
+        '', '', '', '', '',
+        { content: 'TOTAL GERAL', styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: formatNumberBR(getComprovanteTotal()), styles: { halign: 'right', fontStyle: 'bold' } }
+      ]);
+
+      doc.autoTable({
+        startY: 35,
+        head: [['Processo SEI', 'NTE', 'Município', 'Cód. SEC', 'Unidade Escolar', 'Nº do cartão', 'Valor limite']],
+        body: body,
+        styles: {
+          fontSize: 7,
+          cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
+          overflow: 'linebreak',
+          valign: 'middle',
+          lineColor: [203, 213, 225],
+          lineWidth: 0.1
+        },
+        headStyles: {
+          fillColor: [91, 33, 182], textColor: [255, 255, 255],
+          fontStyle: 'bold', fontSize: 7, halign: 'center', valign: 'middle',
+          overflow: 'linebreak'
+        },
+        alternateRowStyles: { fillColor: [250, 245, 255] },
+        columnStyles: {
+          0: { cellWidth: 42, halign: 'left', overflow: 'visible' },
+          1: { cellWidth: 12, halign: 'center' },
+          2: { cellWidth: 28, halign: 'left', overflow: 'linebreak' },
+          3: { cellWidth: 22, halign: 'center' },
+          4: { cellWidth: 'auto', halign: 'left', overflow: 'linebreak' },
+          5: { cellWidth: 36, halign: 'left' },
+          6: { cellWidth: 24, halign: 'right' }
+        },
+        margin: { top: 35, left: margin, right: margin, bottom: 15 },
+        tableWidth: usableWidth,
+        pageBreak: 'auto',
+        rowPageBreak: 'avoid',
+        didParseCell: function (data) {
+          if (data.section === 'body') {
+            const colIdx = data.column.index;
+            if (colIdx === 4 || colIdx === 2) {
+              data.cell.styles.overflow = 'linebreak';
+            }
+            if (colIdx === 0) {
+              data.cell.styles.overflow = 'visible';
+            }
+          }
+          if (data.section === 'body' && data.row.index === body.length - 1) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [237, 233, 254];
+          }
+        }
+      });
+
+      const finalY = doc.lastAutoTable.finalY + 8;
+      doc.setFontSize(8);
+      doc.setTextColor(60, 60, 60);
+      doc.text('Serviço de Atendimento ao Cartão telefones Capitais e Regiões Metropolitanas: 4003-0107 / 4004-0001', margin, finalY);
+
+      const fileName = getVipFileName('pdf');
+      doc.save(fileName);
+      showToast(`✅ PDF salvo como ${fileName}`, 'success');
+    }
+
+    function exportComprovanteExcel() {
+      if (comprovanteData.length === 0) { showToast('Nenhum registro no comprovante para exportar!', 'error'); return; }
+      const aoa = [];
+      aoa.push([`Cliente: ${comprovanteInfo.cliente}`]);
+      aoa.push([`Remessa: ${comprovanteInfo.remessa}`, `Data: ${comprovanteInfo.data}`]);
+      aoa.push(['Comprovante de Liberação de Limite – Cartão PNAE']);
+      aoa.push(['Arquivos Formato VIP636']);
+      aoa.push([]);
+      aoa.push(['Processo SEI', 'NTE', 'Município', 'Cód. SEC', 'Unidade Escolar', 'Nº do cartão', 'Valor limite']);
+      comprovanteData.forEach(item => {
+        aoa.push([item.processoSei, item.nte, item.municipio, item.codSec, item.escola, item.cartao, formatNumberBR(item.valor)]);
+      });
+      aoa.push(['', '', '', '', '', 'TOTAL GERAL', formatNumberBR(getComprovanteTotal())]);
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Comprovante VIP");
+
+      const fileName = getVipFileName('xlsx');
+      XLSX.writeFile(wb, fileName);
+      showToast(`✅ Excel salvo como ${fileName}`, 'success');
+    }
+
+    function setupRelatorioCustomListeners() {
+      document.getElementById('btn-rel-custom-add-selected').addEventListener('click', addSelectedToRelatorioCustom);
+
+      document.getElementById('btn-rel-custom-clear').addEventListener('click', () => {
+        if (relCustomRows.length === 0) return;
+        if (!confirm('Deseja realmente limpar as linhas do relatório?')) return;
+        relCustomRows = [];
+        relCustomSort = { colIndex: null, direction: 'asc' };
+        renderRelatorioCustom();
+        showToast('🗑️ Relatório limpo.', 'success');
+      });
+
+      document.getElementById('btn-rel-custom-autofit').addEventListener('click', () => {
+        autoFitRelatorioCustomColumns(true);
+      });
+
+      document.getElementById('btn-rel-custom-print').addEventListener('click', printRelatorioCustom);
+      document.getElementById('btn-rel-custom-excel').addEventListener('click', exportRelatorioCustomExcel);
+      document.getElementById('btn-rel-custom-pdf').addEventListener('click', exportRelatorioCustomPDF);
+    }
+
+    function addSelectedToRelatorioCustom() {
+      if (selectedRows.size === 0) {
+        showToast('⚠️ Nenhum registro selecionado na aba Relatório!', 'error');
+        return;
+      }
+      const indices = Array.from(selectedRows).sort((a, b) => a - b);
+      const linhas = indices.map(i => filteredRows[i]).filter(Boolean);
+
+      if (linhas.length === 0) {
+        showToast('⚠️ Nenhuma linha válida para adicionar.', 'error');
+        return;
+      }
+
+      for (let i = 0; i < linhas.length; i++) relCustomRows.push(linhas[i]);
+      renderRelatorioCustom();
+      setTimeout(() => autoFitRelatorioCustomColumns(), 60);
+
+      selectedRows.clear();
+      document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = false;
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.remove('selected-row');
+      });
+      updateSelectionUI();
+      updateFilterSummary(filteredRows);
+
+      showToast(`✅ ${linhas.length} linha(s) adicionada(s) ao relatório (total: ${relCustomRows.length}). Use a aba "📄 Gerar Relatório" para visualizar.`, 'success');
+    }
+
+    function getVisibleColumnsIndices() {
+      const idxs = [];
+      for (let i = 0; i < rawHeaders.length; i++) {
+        if (columnVisibility[i]) idxs.push(i);
+      }
+      return idxs;
+    }
+
+    function sortRelatorioCustomByColumn(colIndex) {
+      if (relCustomSort.colIndex === colIndex) {
+        relCustomSort.direction = relCustomSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        relCustomSort.colIndex = colIndex;
+        relCustomSort.direction = 'asc';
+      }
+
+      const headerName = rawHeaders[colIndex] || '';
+      const isNumeric = isNumericColumn(colIndex);
+      const isDateCol = isDateColumnByName(headerName);
+      const dir = relCustomSort.direction === 'asc' ? 1 : -1;
+
+      relCustomRows = [...relCustomRows].sort((a, b) => {
+        const valA = a[colIndex] ?? '';
+        const valB = b[colIndex] ?? '';
+
+        if (isDateCol || (looksLikeISODate(valA) && looksLikeISODate(valB))) {
+          return compareDates(valA, valB) * dir;
+        }
+        if (isNumeric) {
+          return (extractNumericValue(valA) - extractNumericValue(valB)) * dir;
+        }
+
+        const sa = normalizeText(String(valA));
+        const sb = normalizeText(String(valB));
+        if (sa < sb) return -1 * dir;
+        if (sa > sb) return 1 * dir;
+        return 0;
+      });
+
+      renderRelatorioCustom();
+      updateRelCustomSortIcons();
+      showToast(`↕ Relatório ordenado por "${headerName}"`, 'success');
+    }
+
+    function updateRelCustomSortIcons() {
+      document.querySelectorAll('#rel-custom-table thead th').forEach(th => {
+        const idx = parseInt(th.dataset.relCol);
+        const icon = th.querySelector('.rel-sort-icon');
+        if (!icon) return;
+        th.classList.remove('sort-active-rc');
+        if (relCustomSort.colIndex === idx) {
+          th.classList.add('sort-active-rc');
+          icon.textContent = relCustomSort.direction === 'asc' ? '▲' : '▼';
+        } else {
+          icon.textContent = '↕';
+        }
+      });
+    }
+
+    function renderRelatorioCustom() {
+      const theadTr = document.getElementById('rel-custom-thead-tr');
+      const tbody = document.getElementById('rel-custom-tbody');
+      const tfoot = document.getElementById('rel-custom-tfoot');
+      const totalBadge = document.getElementById('rel-custom-total-records');
+
+      if (!theadTr || !tbody || !tfoot) return;
+
+      totalBadge.textContent = `${relCustomRows.length} linha(s) no relatório`;
+
+      const visibleCols = getVisibleColumnsIndices();
+
+      if (visibleCols.length === 0) {
+        theadTr.innerHTML = '<th>Nenhuma coluna visível</th>';
+        tbody.innerHTML = `<tr><td class="rel-custom-empty">Nenhuma coluna está visível na tabela principal. Exiba colunas na aba "Relatório" para que apareçam aqui.</td></tr>`;
+        tfoot.innerHTML = '';
+        return;
+      }
+
+      const theadParts = visibleCols.map(idx => {
+        const name = rawHeaders[idx] || `Coluna ${idx + 1}`;
+        const isVal = isValueColumn(name);
+        const cls = isVal ? ' class="col-valor"' : '';
+        const isActive = relCustomSort.colIndex === idx;
+        const sortIcon = isActive ? (relCustomSort.direction === 'asc' ? '▲' : '▼') : '↕';
+        const activeCls = isActive ? ' sort-active-rc' : '';
+        return `<th data-rel-col="${idx}"${cls} class="sortable-rc${activeCls}" title="Clique para ordenar">
+          <div class="rel-th-content">
+            <span>${escapeHtml(name)}</span>
+            <span class="rel-sort-icon">${sortIcon}</span>
+          </div>
+        </th>`;
+      });
+      theadTr.innerHTML = theadParts.join('');
+
+      theadTr.querySelectorAll('th').forEach(th => {
+        th.addEventListener('click', (e) => {
+          if (e.target.closest('.rel-custom-resizer')) return;
+          const idx = parseInt(th.dataset.relCol);
+          if (isNaN(idx)) return;
+          sortRelatorioCustomByColumn(idx);
+        });
+      });
+
+      if (relCustomRows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${visibleCols.length}" class="rel-custom-empty">Selecione as linhas na aba Relatório e clique em "📄 Adicionar ao Relatório".</td></tr>`;
+        tfoot.innerHTML = '';
+        makeRelatorioCustomResizable();
+        return;
+      }
+
+      const bodyParts = [];
+      for (let r = 0; r < relCustomRows.length; r++) {
+        const row = relCustomRows[r];
+        const cells = visibleCols.map(idx => {
+          let val = row[idx];
+          if (val === null || val === undefined) val = '';
+          const headerName = rawHeaders[idx] || '';
+          const isCurrency = isCurrencyColumn(idx);
+          const isDateCol = isDateColumnByName(headerName);
+          const isProc = isProcessoColumn(headerName);
+          const isWrap = isWrapColumn(headerName);
+          let tdCls = '';
+          if (isProc) tdCls = ' class="col-processo"';
+          else if (isWrap) tdCls = ' class="col-municipio"';
+          if (val !== '') {
+            if (isDateCol) val = formatDateBR(val);
+            else if (looksLikeISODate(val)) val = formatDateBR(val);
+            else if (isCurrency) { val = formatCurrencyBR(extractNumericValue(val)); if (!isProc && !isWrap) tdCls = ' class="col-valor"'; }
+            else if (isValueColumn(headerName)) { val = formatNumberBR(extractNumericValue(val)); if (!isProc && !isWrap) tdCls = ' class="col-valor"'; }
+            else val = escapeHtml(String(val));
+          } else val = '';
+          return `<td${tdCls}>${val}</td>`;
+        });
+        bodyParts.push(`<tr>${cells.join('')}</tr>`);
+      }
+      tbody.innerHTML = bodyParts.join('');
+
+      const valorPositions = [];
+      for (let i = 0; i < visibleCols.length; i++) {
+        const headerName = rawHeaders[visibleCols[i]] || '';
+        if (isCurrencyColumn(visibleCols[i]) || isValueColumn(headerName)) valorPositions.push(i);
+      }
+
+      if (valorPositions.length > 0) {
+        const somas = {};
+        valorPositions.forEach(pos => {
+          const colIdx = visibleCols[pos];
+          let soma = 0;
+          for (let r = 0; r < relCustomRows.length; r++) {
+            soma += extractNumericValue(relCustomRows[r][colIdx]);
+          }
+          somas[pos] = soma;
+        });
+
+        const firstValorPos = valorPositions[0];
+        let labelPos = firstValorPos > 0 ? firstValorPos - 1 : firstValorPos;
+
+        const footCells = visibleCols.map((_, i) => {
+          if (valorPositions.includes(i)) {
+            return `<td class="total-value">${formatCurrencyBR(somas[i])}</td>`;
+          }
+          if (i === labelPos && labelPos !== firstValorPos) {
+            return `<td class="total-label">TOTAL GERAL</td>`;
+          }
+          return `<td class="total-empty"></td>`;
+        });
+
+        if (firstValorPos === 0) {
+          footCells[0] = `<td class="total-value">TOTAL GERAL: ${formatCurrencyBR(somas[0])}</td>`;
+        }
+
+        tfoot.innerHTML = `<tr>${footCells.join('')}</tr>`;
+      } else {
+        tfoot.innerHTML = '';
+      }
+
+      makeRelatorioCustomResizable();
+    }
+
+    function makeRelatorioCustomResizable() {
+      const table = document.getElementById('rel-custom-table');
+      if (!table) return;
+      const cols = table.querySelectorAll('thead th');
+      cols.forEach(col => {
+        if (col.querySelector('.rel-custom-resizer')) return;
+        const resizer = document.createElement('div');
+        resizer.classList.add('rel-custom-resizer');
+        col.appendChild(resizer);
+
+        let x = 0, w = 0;
+        const mouseDownHandler = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          x = e.clientX;
+          w = col.offsetWidth;
+          document.addEventListener('mousemove', mouseMoveHandler);
+          document.addEventListener('mouseup', mouseUpHandler);
+          resizer.classList.add('resizing-rc');
+        };
+        const mouseMoveHandler = (e) => {
+          const newW = Math.max(40, w + (e.clientX - x));
+          col.style.width = `${newW}px`;
+          col.style.minWidth = `${newW}px`;
+        };
+        const mouseUpHandler = () => {
+          document.removeEventListener('mousemove', mouseMoveHandler);
+          document.removeEventListener('mouseup', mouseUpHandler);
+          resizer.classList.remove('resizing-rc');
+        };
+        const dblClickHandler = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          autoFitRelatorioCustomColumn(table, col);
+        };
+        resizer.addEventListener('mousedown', mouseDownHandler);
+        resizer.addEventListener('dblclick', dblClickHandler);
+      });
+    }
+
+    function autoFitRelatorioCustomColumn(table, th) {
+      const headerRow = th.parentElement;
+      const colIndex = Array.from(headerRow.children).indexOf(th);
+      const MIN_WIDTH = 60;
+      const PADDING = 26;
+
+      const headerText = th.textContent || '';
+      const headerFont = getComputedFont(th);
+      let maxWidth = measureTextWidth(headerText, headerFont);
+
+      const tbody = table.querySelector('tbody');
+      if (tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(tr => {
+          const cells = tr.children;
+          if (!cells || cells.length <= colIndex) return;
+          const cell = cells[colIndex];
+          if (cell.hasAttribute('colspan')) return;
+          const cellText = cell.textContent || '';
+          const font = getComputedFont(cell);
+          const w = measureTextWidth(cellText, font);
+          if (w > maxWidth) maxWidth = w;
+        });
+      }
+
+      const tfoot = table.querySelector('tfoot');
+      if (tfoot) {
+        const rows = tfoot.querySelectorAll('tr');
+        rows.forEach(tr => {
+          const cells = tr.children;
+          if (!cells || cells.length <= colIndex) return;
+          const cell = cells[colIndex];
+          if (cell.hasAttribute('colspan')) return;
+          const cellText = cell.textContent || '';
+          const font = getComputedFont(cell);
+          const w = measureTextWidth(cellText, font);
+          if (w > maxWidth) maxWidth = w;
+        });
+      }
+
+      const newWidth = Math.max(MIN_WIDTH, Math.ceil(maxWidth + PADDING));
+      th.style.width = `${newWidth}px`;
+      th.style.minWidth = `${newWidth}px`;
+    }
+
+    function autoFitRelatorioCustomColumns(showFeedback = false) {
+      const table = document.getElementById('rel-custom-table');
+      if (!table) return;
+      const ths = table.querySelectorAll('thead th');
+      if (ths.length === 0 || (ths.length === 1 && ths[0].textContent.includes('Nenhuma coluna'))) {
+        if (showFeedback) showToast('⚠️ Nenhuma coluna para ajustar.', 'error');
+        return;
+      }
+      ths.forEach(th => autoFitRelatorioCustomColumn(table, th));
+      if (showFeedback) showToast(`📏 ${ths.length} coluna(s) auto-ajustada(s)!`, 'success');
+    }
+
+    function exportRelatorioCustomExcel() {
+      if (relCustomRows.length === 0) {
+        showToast('⚠️ Adicione linhas antes de exportar!', 'error');
+        return;
+      }
+
+      const visibleCols = getVisibleColumnsIndices();
+      if (visibleCols.length === 0) {
+        showToast('⚠️ Nenhuma coluna visível para exportar!', 'error');
+        return;
+      }
+
+      const aoa = [];
+      aoa.push(['Relatório — Gerador PNAE 2026']);
+      aoa.push([`Gerado em: ${new Date().toLocaleString('pt-BR')}`]);
+      aoa.push([`Total de linhas: ${relCustomRows.length}`]);
+      aoa.push([]);
+
+      aoa.push(visibleCols.map(i => rawHeaders[i] || `Coluna ${i + 1}`));
+
+      relCustomRows.forEach(row => {
+        const line = visibleCols.map(idx => {
+          let val = row[idx];
+          const headerName = rawHeaders[idx] || '';
+          const isDateCol = isDateColumnByName(headerName);
+          const isCurrency = isCurrencyColumn(idx);
+          if (val === null || val === undefined) return '';
+          if (isDateCol) return formatDateBR(val);
+          if (looksLikeISODate(val)) return formatDateBR(val);
+          if (isCurrency || isValueColumn(headerName)) return extractNumericValue(val);
+          return String(val);
+        });
+        aoa.push(line);
+      });
+
+      const valorPositions = [];
+      for (let i = 0; i < visibleCols.length; i++) {
+        const headerName = rawHeaders[visibleCols[i]] || '';
+        if (isCurrencyColumn(visibleCols[i]) || isValueColumn(headerName)) valorPositions.push(i);
+      }
+
+      if (valorPositions.length > 0) {
+        const somas = {};
+        valorPositions.forEach(pos => {
+          const colIdx = visibleCols[pos];
+          let soma = 0;
+          relCustomRows.forEach(row => { soma += extractNumericValue(row[colIdx]); });
+          somas[pos] = soma;
+        });
+
+        const firstValorPos = valorPositions[0];
+        let labelPos = firstValorPos > 0 ? firstValorPos - 1 : firstValorPos;
+
+        const totalRow = visibleCols.map((_, i) => {
+          if (valorPositions.includes(i)) return somas[i];
+          if (i === labelPos && labelPos !== firstValorPos) return 'TOTAL GERAL';
+          return '';
+        });
+
+        if (firstValorPos === 0) totalRow[0] = `TOTAL GERAL: ${formatCurrencyBR(somas[0])}`;
+
+        aoa.push(totalRow);
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+      const colWidths = visibleCols.map((idx, pos) => {
+        let maxLen = String(rawHeaders[idx] || '').length;
+        aoa.slice(4).forEach(row => {
+          const v = String(row[pos] ?? '');
+          if (v.length > maxLen) maxLen = v.length;
+        });
+        return { wch: Math.min(Math.max(maxLen + 2, 12), 40) };
+      });
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Relatório");
+      const fileName = `Relatorio_PNAE_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      showToast(`✅ Excel salvo como ${fileName}`, 'success');
+    }
+
+    function exportRelatorioCustomPDF() {
+      if (relCustomRows.length === 0) {
+        showToast('⚠️ Adicione linhas antes de exportar!', 'error');
+        return;
+      }
+
+      const visibleCols = getVisibleColumnsIndices();
+      if (visibleCols.length === 0) {
+        showToast('⚠️ Nenhuma coluna visível para exportar!', 'error');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const orientation = visibleCols.length > 6 ? 'landscape' : 'portrait';
+      const doc = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      const usableWidth = pageWidth - margin * 2;
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Relatório — Gerador PNAE 2026', margin, 12);
+
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      doc.text(
+        `${relCustomRows.length} linha(s) • Gerado em ${new Date().toLocaleString('pt-BR')}`,
+        margin, 18
+      );
+
+      const head = [visibleCols.map(i => rawHeaders[i] || `Coluna ${i + 1}`)];
+      const body = relCustomRows.map(row => {
+        return visibleCols.map(idx => {
+          let val = row[idx];
+          const headerName = rawHeaders[idx] || '';
+          const isDateCol = isDateColumnByName(headerName);
+          const isCurrency = isCurrencyColumn(idx);
+          if (val === null || val === undefined) return '';
+          if (isDateCol) return formatDateBR(val);
+          if (looksLikeISODate(val)) return formatDateBR(val);
+          if (isCurrency || isValueColumn(headerName)) return formatCurrencyBR(extractNumericValue(val));
+          return String(val);
+        });
+      });
+
+      const valorPositions = [];
+      for (let i = 0; i < visibleCols.length; i++) {
+        const headerName = rawHeaders[visibleCols[i]] || '';
+        if (isCurrencyColumn(visibleCols[i]) || isValueColumn(headerName)) valorPositions.push(i);
+      }
+
+      if (valorPositions.length > 0) {
+        const somas = {};
+        valorPositions.forEach(pos => {
+          const colIdx = visibleCols[pos];
+          let soma = 0;
+          relCustomRows.forEach(row => { soma += extractNumericValue(row[colIdx]); });
+          somas[pos] = soma;
+        });
+
+        const firstValorPos = valorPositions[0];
+        let labelPos = firstValorPos > 0 ? firstValorPos - 1 : firstValorPos;
+
+        const totalRow = visibleCols.map((_, i) => {
+          if (valorPositions.includes(i)) return formatCurrencyBR(somas[i]);
+          if (i === labelPos && labelPos !== firstValorPos) return 'TOTAL GERAL';
+          return '';
+        });
+
+        if (firstValorPos === 0) totalRow[0] = `TOTAL GERAL: ${formatCurrencyBR(somas[0])}`;
+
+        body.push(totalRow);
+      }
+
+      doc.autoTable({
+        startY: 24,
+        head: head,
+        body: body,
+        styles: {
+          fontSize: 7,
+          cellPadding: 1.5,
+          overflow: 'linebreak',
+          valign: 'middle',
+          lineColor: [203, 213, 225],
+          lineWidth: 0.1
+        },
+        headStyles: {
+          fillColor: [15, 118, 110],
+          textColor: [255, 255, 255],
+          fontSize: 7,
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        alternateRowStyles: { fillColor: [240, 253, 250] },
+        margin: { top: 24, left: margin, right: margin, bottom: 15 },
+        tableWidth: usableWidth,
+        pageBreak: 'auto',
+        rowPageBreak: 'avoid',
+        didParseCell: function (data) {
+          if (data.section === 'body' && data.row.index === body.length - 1 && valorPositions.length > 0) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [204, 251, 241];
+            data.cell.styles.textColor = [15, 118, 110];
+          }
+          const colIdx = visibleCols[data.column.index];
+          const colName = colIdx !== undefined ? (rawHeaders[colIdx] || '') : '';
+          if (isValueColumn(colName) || (colIdx !== undefined && isCurrencyColumn(colIdx))) {
+            data.cell.styles.halign = 'right';
+          } else {
+            const n = normalizeText(colName);
+            if (n.includes('nte') || n.includes('cod') || n.includes('remessa')) {
+              data.cell.styles.halign = 'center';
+            }
+          }
+        }
+      });
+
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= pageCount; p++) {
+        doc.setPage(p);
+        doc.setFontSize(7);
+        doc.setTextColor(120);
+        doc.text(`Página ${p} de ${pageCount}`, pageWidth - 25, doc.internal.pageSize.getHeight() - 5);
+      }
+
+      const fileName = `Relatorio_PNAE_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+      doc.save(fileName);
+      showToast(`✅ PDF salvo como ${fileName}`, 'success');
+    }
+
+    function printRelatorioCustom() {
+      if (relCustomRows.length === 0) {
+        showToast('⚠️ Adicione linhas antes de imprimir!', 'error');
+        return;
+      }
+
+      const theadTr = document.getElementById('rel-custom-thead-tr');
+      const tbody = document.getElementById('rel-custom-tbody');
+      const tfoot = document.getElementById('rel-custom-tfoot');
+      if (!theadTr || !tbody) return;
+
+      const win = window.open('', '_blank');
+      if (!win) { showToast('⚠️ Permita pop-ups para imprimir.', 'error'); return; }
+
+      const html = `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <title>Relatório</title>
+          <style>
+            * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+            body { padding: 15px; color: #0f172a; }
+            h1 { font-size: 16px; margin-bottom: 4px; }
+            .meta { font-size: 11px; color: #475569; margin-bottom: 12px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; vertical-align: top; word-break: break-word; }
+            thead th { background: #0f766e; color: #fff; font-weight: 700; text-align: center; }
+            tbody tr:nth-child(even) { background: #f0fdfa; }
+            td.col-valor { text-align: right; font-variant-numeric: tabular-nums; }
+            tfoot td { background: #ccfbf1; font-weight: 800; color: #0f766e; border-top: 2px solid #0f766e; }
+            tfoot td.total-label { text-align: right; }
+            tfoot td.total-value { text-align: right; font-variant-numeric: tabular-nums; }
+            .rel-sort-icon { display: none; }
+            @media print {
+              body { padding: 0; }
+              @page { margin: 10mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Relatório — Gerador PNAE 2026</h1>
+          <div class="meta">${relCustomRows.length} linha(s) • Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+          <table>
+            <thead>${theadTr.innerHTML}</thead>
+            <tbody>${tbody.innerHTML}</tbody>
+            <tfoot>${tfoot.innerHTML}</tfoot>
+          </table>
+        </body>
+        </html>
+      `;
+
+      win.document.write(html);
+      win.document.close();
+
+      win.addEventListener('load', () => {
+        setTimeout(() => {
+          try { win.focus(); win.print(); } catch (e) {}
+        }, 300);
+      });
+    }
+  </script>
+</body>
+</html>
